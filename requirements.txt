@@ -1,5 +1,5 @@
 torch
-python-lightning
+pytorch-lightning
 pyyaml
 scikit-learn
 matplotlib
