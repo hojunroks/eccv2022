@@ -5,3 +5,6 @@ scikit-learn
 matplotlib
 lightning-bolts
 argparse
+pandas
+scikit-image
+torchvision
