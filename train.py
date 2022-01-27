@@ -30,7 +30,7 @@ def main():
     # INITIALIZE MODULES
     ###########################
     dm = CelebAEncodedData(args)    
-    translator = CycleGan(args, target_attr=21)
+    translator = CycleGan(args, target_attr=20)
     logger = TensorBoardLogger('logs/{}'.format(datetime.now().strftime("/%m%d")), name='')
 
     ###########################
@@ -40,8 +40,8 @@ def main():
     # checkpoint_callback = ModelCheckpoint(monitor="loss/validation")
     trainer = pl.Trainer.from_argparse_args(args,
         logger=logger,
-        # callbacks = [checkpoint_callback],
-        accumulate_grad_batches = 4,
+        # callbacks = [checkpoint_callback],  
+        accumulate_grad_batches = 1,
         gradient_clip_val=0.5
     )
     

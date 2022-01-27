@@ -57,6 +57,7 @@ class CelebAEncodedData(pl.LightningDataModule):
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             drop_last=True,
+            shuffle=True,
             pin_memory=True,
             persistent_workers=True
         )
@@ -69,6 +70,7 @@ class CelebAEncodedData(pl.LightningDataModule):
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             drop_last=True,
+            shuffle=True,
             pin_memory=True,
             persistent_workers=True
         )

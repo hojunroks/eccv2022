@@ -9,7 +9,7 @@ import gc
 from src.models.cycleganparts import CycleGanCritic, CycleGanGenerator
 
 class CycleGan(pl.LightningModule):
-    def __init__(self, lr=1e-4, b1=0.5, b2=0.999, *args, **kwargs):
+    def __init__(self, lr=1e-4, b1=0.5, b2=0.99, *args, **kwargs):
         super().__init__()
         self.lr = lr
         self.b1 = b1
@@ -74,7 +74,7 @@ class CycleGan(pl.LightningModule):
             recon_B = self.A2B(fake_A)
             loss_BAB_recon = self.cycle_loss(recon_B, B_imgs)
 
-            generator_loss = loss_identity_B + loss_identity_A + loss_gan_A2B + loss_gan_B2A + loss_ABA_recon + loss_BAB_recon
+            generator_loss = loss_identity_B + loss_identity_A + 5*loss_gan_A2B + 5*loss_gan_B2A + loss_ABA_recon + loss_BAB_recon
             tqdm_dict = {
                 "g_loss": generator_loss,
                 "id_b_loss": loss_identity_B,
@@ -137,7 +137,7 @@ class CycleGan(pl.LightningModule):
         b_size = real_data.shape[0]
 
         # Calculate interpolation
-        alpha = torch.rand(b_size, 1, 1, 1, requires_grad=True).type_as(real_data)
+        alpha = torch.rand(b_size, 1, 1, 1, requires_grad=True).to(self.device)
         alpha = alpha.expand_as(real_data)
 
         interpolated = alpha * real_data.data + (1 - alpha) * generated_data.data
@@ -148,7 +148,7 @@ class CycleGan(pl.LightningModule):
         # Calculate gradients of probabilities with respect to examples
         gradients = torch.autograd.grad(
                 outputs=prob_interpolated, inputs=interpolated,
-                            grad_outputs=torch.ones(prob_interpolated.shape).type_as(real_data),
+                            grad_outputs=torch.ones(prob_interpolated.shape).to(self.device),
                             create_graph=True, retain_graph=True)[0]
 
         # Gradients have shape (batch_size, num_channels, img_width, img_height),

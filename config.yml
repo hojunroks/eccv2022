@@ -1,9 +1,9 @@
 common:
   log_every_n_steps: 1
-  gradient_clip_val: 0.5
+  # gradient_clip_val: 0.5
   data_dir: "./data/celeba"
   deterministic: True
-  precision: 64
+  precision: 16
   gpus: 2
 
 autoencoder:
@@ -11,22 +11,22 @@ autoencoder:
   batch_size: 1024
   num_workers: 8
   lr: 1e-4
-  accumulate_grad_batches: 4
+  accumulate_grad_batches: 1
 
 translator:
   max_epochs: 100
-  batch_size: 256
+  batch_size: 1024
   num_workers: 2
   lr: 5e-4
-  target_attr: 21
+  target_attr: 20
   b1: 0.5
   b2: 0.99
   accumulate_grad_batches: 1
 
 classifier:
   max_epochs: 10
-  batch_size: 1024
+  batch_size: 2048
   num_workers: 8
-  lr: 1e-4
-  accumulate_grad_batches: 4
+  lr: 1e-3
+  accumulate_grad_batches: 1
 

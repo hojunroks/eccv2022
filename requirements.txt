@@ -1,0 +1,7 @@
+torch
+python-lightning
+pyyaml
+scikit-learn
+matplotlib
+lightning-bolts
+argparse

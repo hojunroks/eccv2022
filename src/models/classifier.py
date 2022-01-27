@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from argparse import ArgumentParser
 from src.scheduler import WarmupCosineLR
-from torchmetrics import Accuracy
+from torchmetrics import Accuracy, AUROC
 
 class Identity(nn.Module):
     def __init__(self):
@@ -28,13 +28,18 @@ class Classifier(pl.LightningModule):
             nn.Linear(512, 2),
             nn.Softmax()
         )
+        self.p = 0.5
         self.accuracy = Accuracy()
+        # self.accuracy = AUROC(num_classes=2)
         self.preEncoder = Identity()
         if preEncoder!=None:
-            self.preEncoder = preEncoder
+            self.preEncoder = preEncoder.to(self.device)
             self.preEncoder.train()
 
     def forward(self, x):
+        # b = x.shape[0]
+        # u = b//2
+        # x[:u]= self.preEncoder(x[:u])
         x = self.preEncoder(x)
         x = self.model(x)
         return self.fc(x)
@@ -42,14 +47,17 @@ class Classifier(pl.LightningModule):
     def shared_step(self, batch, batch_index):
         x, y = batch
         y_hat = self.forward(x)
-        loss = F.cross_entropy(y_hat, ((y[:,self.target_attr]+1)/2).long())
-        accuracy = self.accuracy(y_hat, ((y[:,self.target_attr]+1)/2).long())
+        y_true = ((y[:,self.target_attr]+1)/2).long()
+        loss = F.cross_entropy(y_hat, y_true)
+        accuracy = self.accuracy(y_hat, y_true)
+
         return loss, accuracy
 
     def training_step(self, batch, batch_index):
         loss, accuracy = self.shared_step(batch, batch_index)
         self.log('loss/train', loss)
         self.log('acc/train', accuracy)
+        x,y =batch
         return loss
 
     def validation_step(self, batch, batch_index):
@@ -66,7 +74,7 @@ class Classifier(pl.LightningModule):
             lr=self.hparams.learning_rate, 
             weight_decay=self.hparams.weight_decay
         )
-        total_steps = self.hparams.max_epochs * len(self.train_dataloader())
+        total_steps = self.hparams.max_epochs * len(self.trainer._data_connector._train_dataloader_source.dataloader())
         scheduler = {
             "scheduler": WarmupCosineLR(
                 optimizer, warmup_epochs=total_steps * 0.1, max_epochs=total_steps
