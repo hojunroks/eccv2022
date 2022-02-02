@@ -1,3 +1,4 @@
+import random
 import pytorch_lightning as pl
 import pandas as pd
 import torch
@@ -175,3 +176,57 @@ class CelebAData(pl.LightningDataModule):
             persistent_workers=True
         )
         return dataloader
+
+
+
+class CelebAResizedDataset(Dataset):
+    def __init__(self, root, transform):
+        self.attributes = pd.read_csv(os.path.join(root, 'list_attr_celeba.csv'))
+        self.images_dir = os.path.join(root, 'img_align_celeba_128')
+        self.indices = range(len(self))
+        self.transform = transform
+
+
+    def __len__(self):
+        return len(self.attributes)
+    
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+        
+        img_name = os.path.join(self.images_dir, self.attributes.iloc[idx, 0])
+        image = io.imread(img_name)
+        idx2 = random.choice(self.indices)
+        img_name2 = os.path.join(self.images_dir, self.attributes.iloc[idx2, 0])
+        image2 = io.imread(img_name2)
+        if self.transform:
+            image = self.transform(image)
+            image2 = self.transform(image2)
+        return image,image2
+
+
+class CelebAResizedData(pl.LightningDataModule):
+    def __init__(self, args):   
+        super().__init__()
+        self.data_dir = args.data_dir
+        self.batch_size = args.batch_size
+        self.num_workers = args.num_workers
+
+    def train_dataloader(self):
+        transform = T.Compose(
+            [
+                T.ToTensor(),
+            ]
+        )
+        dataset = CelebAResizedDataset(root=self.data_dir, transform=transform)
+        dataloader = DataLoader(
+            dataset,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=True,
+            drop_last=True,
+            pin_memory=True,
+            persistent_workers=True
+        )
+        return dataloader
+
