@@ -182,7 +182,7 @@ class CelebAData(pl.LightningDataModule):
 class CelebAResizedDataset(Dataset):
     def __init__(self, root, transform):
         self.attributes = pd.read_csv(os.path.join(root, 'list_attr_celeba.csv'))
-        self.images_dir = os.path.join(root, 'img_align_celeba_128')
+        self.images_dir = os.path.join(root, 'img_align_celeba_64')
         self.indices = range(len(self))
         self.transform = transform
 

@@ -7,27 +7,53 @@ class FactorVAE2(nn.Module):
     def __init__(self, z_dim=128):
         super(FactorVAE2, self).__init__()
         self.z_dim = z_dim
+        # self.encode = nn.Sequential(
+        #     nn.Conv2d(3, 32, 4, 2, 1),
+        #     nn.ReLU(True),
+        #     nn.Conv2d(32, 32, 4, 2, 1),
+        #     nn.ReLU(True),
+        #     nn.Conv2d(32, 64, 4, 2, 1),
+        #     nn.ReLU(True),
+        #     nn.Conv2d(64, 64, 4, 2, 1),
+        #     nn.ReLU(True),
+        #     nn.Conv2d(64, 256, 4, 1),
+        #     nn.ReLU(True),
+        #     nn.Conv2d(256, 2*z_dim, 1)
+        # )
+        self.decode = nn.Sequential(
+            nn.Conv2d(z_dim, 256, 1),
+            nn.ReLU(True),
+            nn.ConvTranspose2d(256, 64, 4),
+            nn.ReLU(True),
+            nn.ConvTranspose2d(64, 64, 4, 2, 1),
+            nn.ReLU(True),
+            nn.ConvTranspose2d(64, 32, 4, 2, 1),
+            nn.ReLU(True),
+            nn.ConvTranspose2d(32, 32, 4, 2, 1),
+            nn.ReLU(True),
+            nn.ConvTranspose2d(32, 3, 4, 2, 1),
+        )
         self.encode = nn.Sequential(
             EncoderBlock(3,32),
             EncoderBlock(32,32),
-            EncoderBlock(32,32),
+            # EncoderBlock(32,32),
             EncoderBlock(32,64),
             EncoderBlock(64,64),
             EncoderBlock(64,128),
             EncoderBlock(128,128),
             nn.Conv2d(128, 2*z_dim, 1)
         )
-        self.decode = nn.Sequential(
-            nn.Conv2d(z_dim, 128, 1),
-            nn.ReLU(True),
-            DecoderBlock(128, 128),
-            DecoderBlock(128, 64),
-            DecoderBlock(64, 64),
-            DecoderBlock(64, 32),
-            DecoderBlock(32, 32),
-            DecoderBlock(32, 32),
-            DecoderBlock(32, 3),
-        )
+        # self.decode = nn.Sequential(
+        #     nn.Conv2d(z_dim, 128, 1),
+        #     nn.ReLU(True),
+        #     DecoderBlock(128, 128),
+        #     DecoderBlock(128, 64),
+        #     DecoderBlock(64, 64),
+        #     DecoderBlock(64, 32),
+        #     # DecoderBlock(32, 32),
+        #     DecoderBlock(32, 32),
+        #     DecoderBlock(32, 3),
+        # )
         self.weight_init()
 
     def weight_init(self, mode='normal'):
@@ -119,34 +145,36 @@ class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         self.c1 = nn.Conv2d(in_channels, out_channels, 4, 2, 1)
-        self.b1 = nn.BatchNorm2d(out_channels)
+        # self.b1 = nn.BatchNorm2d(out_channels)
         self.c2 = nn.Conv2d(out_channels, out_channels, 3, padding="same")
-        self.b2 = nn.BatchNorm2d(out_channels)
+        # self.b2 = nn.BatchNorm2d(out_channels)
         self.c3 = nn.Conv2d(out_channels, out_channels, 3, padding="same")
-        self.b3 = nn.BatchNorm2d(out_channels)
+        # self.b3 = nn.BatchNorm2d(out_channels)
     
     def forward(self, x):
-        x = nn.ReLU(True)(self.b1(self.c1(x)))
+        x = nn.ReLU(True)(self.c1(x))
         y = x
-        x = nn.ReLU(True)(self.b2(self.c2(x)))
-        x = nn.ReLU(True)(self.b3(self.c3(x)))
+        x = nn.ReLU(True)(self.c2(x))
+        x = self.c3(x)
         x = y+x
+        x = nn.ReLU(True)(x)
         return x
 
 class DecoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         self.c1 = nn.ConvTranspose2d(in_channels, out_channels, 4, 2, 1)
-        self.b1 = nn.BatchNorm2d(out_channels)
+        # self.b1 = nn.BatchNorm2d(out_channels)
         self.c2 = nn.ConvTranspose2d(out_channels, out_channels, 3, padding=1)
-        self.b2 = nn.BatchNorm2d(out_channels)
+        # self.b2 = nn.BatchNorm2d(out_channels)
         self.c3 = nn.ConvTranspose2d(out_channels, out_channels, 3, padding=1)
-        self.b3 = nn.BatchNorm2d(out_channels)
+        # self.b3 = nn.BatchNorm2d(out_channels)
     
     def forward(self, x):
-        x = nn.ReLU(True)(self.b1(self.c1(x)))
+        x = nn.ReLU(True)(self.c1(x))
         y = x
-        x = nn.ReLU(True)(self.b2(self.c2(x)))
-        x = nn.ReLU(True)(self.b3(self.c3(x)))
+        x = nn.ReLU(True)(self.c2(x))
+        x = self.c3(x)
         x = y+x
+        x = nn.ReLU(True)(x)
         return x
