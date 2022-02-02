@@ -30,11 +30,11 @@ class Classifier(pl.LightningModule):
         )
         self.p = 0.5
         self.accuracy = Accuracy()
-        # self.accuracy = AUROC(num_classes=2)
+        self.auroc = AUROC(num_classes=2)
         self.preEncoder = Identity()
         if preEncoder!=None:
             self.preEncoder = preEncoder.to(self.device)
-            self.preEncoder.train()
+            self.preEncoder.eval()
 
     def forward(self, x):
         # b = x.shape[0]
@@ -50,20 +50,23 @@ class Classifier(pl.LightningModule):
         y_true = ((y[:,self.target_attr]+1)/2).long()
         loss = F.cross_entropy(y_hat, y_true)
         accuracy = self.accuracy(y_hat, y_true)
+        auroc = self.auroc(y_hat, y_true)
 
-        return loss, accuracy
+        return loss, accuracy, auroc
 
     def training_step(self, batch, batch_index):
-        loss, accuracy = self.shared_step(batch, batch_index)
+        loss, accuracy, auroc = self.shared_step(batch, batch_index)
         self.log('loss/train', loss)
         self.log('acc/train', accuracy)
+        self.log('auroc/train', auroc)
         x,y =batch
         return loss
 
     def validation_step(self, batch, batch_index):
-        loss, accuracy = self.shared_step(batch, batch_index)
+        loss, accuracy, auroc = self.shared_step(batch, batch_index)
         self.log('loss/val', loss)
         self.log('acc/val', accuracy)
+        self.log('auroc/val', auroc)
 
     def test_step(self, batch, batch_index):
         pass

@@ -42,4 +42,4 @@ fvae:
   beta1_D: 0.5
   beta2_D: 0.9
   gamma: 6.4
-  z_dim: 512
+  z_dim: 1024
