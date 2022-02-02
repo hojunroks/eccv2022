@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 from src.models.factorvae import FactorVAE
-from src.datamodule import CelebAData
+from src.datamodule import CelebAResizedData
 import pytorch_lightning as pl
 from datetime import datetime
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -33,7 +33,7 @@ def main():
     # INITIALIZE DATAMODULE
     ###########################
     print("INITIALIZING DATAMODULE...")
-    dm = CelebAData(args)
+    dm = CelebAResizedData(args)
     
     ###########################
     # INITIALIZE MODEL
