@@ -9,11 +9,11 @@ from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms as T
 
 class CelebAEncodedDataset(Dataset):
-    def __init__(self, root, train=0):
-        partition =  pd.read_csv(os.path.join(root, 'list_eval_partition.csv'))
+    def __init__(self, root, partition_csv='list_eval_partition.csv', attributes_csv='list_attr_celeba.csv', train=0, encoded_dir='data_encoded', transform=None):
+        partition =  pd.read_csv(os.path.join(root, partition_csv))
         indices = partition.index[partition['partition']==train].tolist()
-        self.attributes = pd.read_csv(os.path.join(root, 'list_attr_celeba.csv')).iloc[indices]
-        self.encoded_dir = os.path.join('data_encoded')
+        self.attributes = pd.read_csv(os.path.join(root, attributes_csv)).iloc[indices]
+        self.encoded_dir = encoded_dir
         
     def __len__(self):
         return len(self.attributes)
@@ -21,8 +21,8 @@ class CelebAEncodedDataset(Dataset):
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        encoding_name = os.path.join(self.encoded_dir, self.attributes.iloc[idx, 0]).replace('jpg', 'pt')
-        encoded_tensor = torch.load(encoding_name).cpu()[0]
+        encoding_name = os.path.join(self.encoded_dir, self.attributes.iloc[idx, 0]).replace('.jpg', '.npy')
+        encoded_tensor = torch.from_numpy(np.load(encoding_name))
         attributes = self.attributes.iloc[idx, 1:].to_numpy(dtype=np.float32)
         attributes = torch.from_numpy(attributes)
         return encoded_tensor,attributes
@@ -33,7 +33,6 @@ class CelebAEncodedData(pl.LightningDataModule):
         self.data_dir = args.data_dir
         self.batch_size = args.batch_size
         self.num_workers = args.num_workers
-        self.image_size = 128
     
     def get_dataloader(self, train):
         dataset = CelebAEncodedDataset(root=self.data_dir, train=train)

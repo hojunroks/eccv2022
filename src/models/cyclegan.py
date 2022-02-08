@@ -36,9 +36,8 @@ class CycleGan(pl.LightningModule):
         return nn.L1Loss()(y_hat, y)
 
     def training_step(self, batch, batch_idx, optimizer_idx):
-        gc.collect()
-        torch.cuda.empty_cache()
         image_batch, attributes_batch = batch
+        print(image_batch.shape)
         target_attrs = (attributes_batch[:, self.target_attr]+1)/2
         A_idxes = torch.nonzero(target_attrs)[:,0]
         B_idxes = torch.nonzero(1-target_attrs)[:,0]

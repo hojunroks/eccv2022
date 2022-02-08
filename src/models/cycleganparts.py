@@ -61,11 +61,11 @@ class CycleGanCriticFC(nn.Module):
 class CycleGanGeneratorFC(nn.Module):
     def __init__(self):
         super().__init__()
-        self.f1 = FCBlock(1024, 1024)
-        self.f2 = FCBlock(1024, 1024)
-        self.f3 = FCBlock(1024, 1024)
-        self.f4 = FCBlock(1024, 1024)
-        self.f5 = FCBlock(1024, 1024)
+        self.f1 = FCBlock(1024, 512)
+        self.f2 = FCBlock(512, 256)
+        self.f3 = FCBlock(256, 256)
+        self.f4 = FCBlock(256, 512)
+        self.f5 = FCBlock(512, 1024)
 
     def forward(self, x):
         x = self.f1(x)

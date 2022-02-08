@@ -4,6 +4,7 @@ from src.datamodule import CelebAEncodedData
 import pytorch_lightning as pl
 from datetime import datetime
 from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from src.utils import parse_config
 import sys
 
@@ -31,30 +32,21 @@ def main():
     ###########################
     dm = CelebAEncodedData(args)    
     translator = CycleGan(args, target_attr=20)
-    logger = TensorBoardLogger('logs/{}'.format(datetime.now().strftime("/%m%d")), name='')
+    logger = TensorBoardLogger('logs/cgan/{}'.format(datetime.now().strftime("/%m%d")), name='')
 
     ###########################
     # TRAIN
     ###########################
     print("START TRAINING...")
     # checkpoint_callback = ModelCheckpoint(monitor="loss/validation")
+    lr_monitor = LearningRateMonitor(logging_interval='step')
     trainer = pl.Trainer.from_argparse_args(args,
         logger=logger,
-        # callbacks = [checkpoint_callback],  
-        accumulate_grad_batches = 1,
-        gradient_clip_val=0.5
+        callbacks = [lr_monitor],  
     )
     
     trainer.fit(translator, datamodule=dm)
     
-    trainer.save_checkpoint(logger.log_dir+logger.name+"/"+logger.name+"celeba_test.ckpt")
-
-    ###########################
-    # TEST
-    ###########################
-    print("START TESTING...")
-    # result = trainer.test(datamodule=dm)
-    # print(result)
 
 if __name__=='__main__':
     main()
