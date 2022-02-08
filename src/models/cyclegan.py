@@ -6,7 +6,7 @@ import torch.nn as nn
 import random
 from argparse import ArgumentParser
 import gc
-from src.models.cycleganparts import CycleGanCritic, CycleGanGenerator
+from src.models.cycleganparts import CycleGanCritic, CycleGanGenerator, CycleGanCriticFC, CycleGanGeneratorFC
 
 class CycleGan(pl.LightningModule):
     def __init__(self, lr=1e-4, b1=0.5, b2=0.99, *args, **kwargs):
@@ -17,11 +17,11 @@ class CycleGan(pl.LightningModule):
         self.save_hyperparameters()
         self.target_attr = self.hparams.target_attr
 
-        self.A2B = CycleGanGenerator()
-        self.B2A = CycleGanGenerator()
+        self.A2B = CycleGanGeneratorFC()
+        self.B2A = CycleGanGeneratorFC()
 
-        self.d_A = CycleGanCritic()
-        self.d_B = CycleGanCritic()
+        self.d_A = CycleGanCriticFC()
+        self.d_B = CycleGanCriticFC()
 
         self.fake_A_buffer = ReplayBuffer()
         self.fake_B_buffer = ReplayBuffer()
@@ -74,7 +74,7 @@ class CycleGan(pl.LightningModule):
             recon_B = self.A2B(fake_A)
             loss_BAB_recon = self.cycle_loss(recon_B, B_imgs)
 
-            generator_loss = loss_identity_B + loss_identity_A + 5*loss_gan_A2B + 5*loss_gan_B2A + loss_ABA_recon + loss_BAB_recon
+            generator_loss = loss_identity_B + loss_identity_A + loss_gan_A2B + loss_gan_B2A + loss_ABA_recon + loss_BAB_recon
             tqdm_dict = {
                 "g_loss": generator_loss,
                 "id_b_loss": loss_identity_B,

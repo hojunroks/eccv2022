@@ -3,6 +3,8 @@ common:
   gradient_clip_val: 0.5
   data_dir: "./data_preprocessed/celeba"
   images_dir: "img_align_celeba_64"
+  encoded_dir: "./data_encoded"
+  pretrained_autoencoder: "epoch=97-step=15483.ckpt"
   deterministic: True
   precision: 16
   gpus: 2

@@ -44,6 +44,7 @@ class CelebAEncodedData(pl.LightningDataModule):
             shuffle=True,
             drop_last=True,
             pin_memory=True,
+            persistent_workers=True
         )
         return dataloader
 
@@ -58,7 +59,7 @@ class CelebAEncodedData(pl.LightningDataModule):
 
 
 class CelebADataset(Dataset):
-    def __init__(self, root, images_dir='list_attr_celeba.csv', partition_csv='list_eval_partition.csv', attributes_csv='list_attr_celeba.csv', train=0, transform=None):
+    def __init__(self, root, images_dir='img_align_celeba', partition_csv='list_eval_partition.csv', attributes_csv='list_attr_celeba.csv', train=0, transform=None):
         partition =  pd.read_csv(os.path.join(root, partition_csv))
         indices = partition.index[partition['partition']==train].tolist()
         self.attributes = pd.read_csv(os.path.join(root, attributes_csv)).iloc[indices]
