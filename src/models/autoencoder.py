@@ -20,7 +20,7 @@ class AutoEncoder(pl.LightningModule):
             EncoderBlock(32, 64),
             EncoderBlock(64, 128),
             EncoderBlock(128, 256),
-            nn.Sigmoid()
+            # nn.Sigmoid()
         )
         self.decoder = nn.Sequential(
             DecoderBlock(256, 128),
