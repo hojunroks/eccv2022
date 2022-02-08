@@ -27,7 +27,8 @@ class AutoEncoder(pl.LightningModule):
             DecoderBlock(128, 64),
             DecoderBlock(64, 32),
             DecoderBlock(32, 8),
-            DecoderBlock(8, 3)
+            DecoderBlock(8, 3),
+            nn.Sigmoid()
         )
         self.loss = nn.MSELoss()
     
