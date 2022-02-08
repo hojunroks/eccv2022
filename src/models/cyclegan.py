@@ -33,10 +33,10 @@ class CycleGan(pl.LightningModule):
         return torch.mean(y_hat)-torch.mean(y)
 
     def cycle_loss(self, y_hat, y):
-        return nn.L1Loss()(y_hat, y)
+        return nn.MSELoss()(y_hat, y)
 
     def identity_loss(self, y_hat, y):
-        return nn.L1Loss()(y_hat, y)
+        return nn.MSELoss()(y_hat, y)
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         image_batch, attributes_batch = batch
