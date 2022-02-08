@@ -125,37 +125,16 @@ class DecoderBlock(nn.Module):
         super().__init__()
         self.c1 = nn.ConvTranspose2d(in_channels, out_channels, 3, stride=2, padding=1, output_padding=1)
         self.b1 = nn.BatchNorm2d(out_channels)
-        self.c2 = nn.ConvTranspose2d(in_channels, in_channels, 3, padding=1)
-        self.b2 = nn.BatchNorm2d(in_channels)
-        self.c3 = nn.ConvTranspose2d(in_channels, in_channels, 3, padding=1)
-        self.b3 = nn.BatchNorm2d(in_channels)
-        
-        
+        self.c2 = nn.ConvTranspose2d(out_channels, out_channels, 3, padding=1)
+        self.b2 = nn.BatchNorm2d(out_channels)
+        self.c3 = nn.ConvTranspose2d(out_channels, out_channels, 3, padding=1)
+        self.b3 = nn.BatchNorm2d(out_channels)
+
     
     def forward(self, x):
+        x = self.b1(self.c1(x))
         y = x
         x = nn.ReLU()(self.b2(self.c2(x)))
         x = self.b3(self.c3(x))
         x = nn.ReLU()(y+x)
-        x = nn.ReLU()(self.b1(self.c1(x)))
         return x
-
-
-    # def __init__(self, in_channels, out_channels):
-    #     super().__init__()
-    #     self.c1 = nn.ConvTranspose2d(in_channels, out_channels, 3, stride=2, padding=1, output_padding=1)
-    #     self.b1 = nn.BatchNorm2d(out_channels)
-    #     self.c2 = nn.ConvTranspose2d(out_channels, out_channels, 3, padding=1)
-    #     self.b2 = nn.BatchNorm2d(out_channels)
-    #     self.c3 = nn.ConvTranspose2d(out_channels, out_channels, 3, padding=1)
-    #     self.b3 = nn.BatchNorm2d(out_channels)
-        
-        
-    
-    # def forward(self, x):
-    #     x = self.b1(self.c1(x))
-    #     y = x
-    #     x = nn.ReLU()(self.b2(self.c2(x)))
-    #     x = self.b3(self.c3(x))
-    #     x = nn.ReLU()(y+x)
-    #     return x
