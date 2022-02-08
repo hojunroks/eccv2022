@@ -85,7 +85,7 @@ class AutoEncoder(pl.LightningModule):
             lr=self.hparams.lr, 
             weight_decay=self.hparams.weight_decay
         )
-        total_steps = self.hparams.max_epochs * len(self.train_dataloader())
+        total_steps = self.hparams.max_epochs * len(self.trainer._data_connector._train_dataloader_source.dataloader())
         scheduler = {
             "scheduler": WarmupCosineLR(
                 optimizer, warmup_epochs=total_steps * 0.2, max_epochs=total_steps
