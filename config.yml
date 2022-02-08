@@ -4,7 +4,7 @@ common:
   data_dir: "./data_preprocessed/celeba"
   images_dir: "img_align_celeba_64"
   encoded_dir: "./data_encoded"
-  pretrained_autoencoder: "epoch=97-step=15483.ckpt"
+  pretrained_autoencoder: "pretrained/epoch=99-step=15799.ckpt"
   deterministic: True
   precision: 16
   gpus: 2
