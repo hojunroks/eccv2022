@@ -95,7 +95,7 @@ class AutoEncoder(pl.LightningModule):
     @staticmethod
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--learning_rate", type=float, required=False)
+        parser.add_argument("--lr", type=float, required=False)
         parser.add_argument("--weight_decay", type=float, required=False)
         return parser
 
