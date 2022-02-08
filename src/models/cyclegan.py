@@ -37,7 +37,6 @@ class CycleGan(pl.LightningModule):
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         image_batch, attributes_batch = batch
-        print(image_batch.shape)
         target_attrs = (attributes_batch[:, self.target_attr]+1)/2
         A_idxes = torch.nonzero(target_attrs)[:,0]
         B_idxes = torch.nonzero(1-target_attrs)[:,0]
@@ -136,7 +135,7 @@ class CycleGan(pl.LightningModule):
         b_size = real_data.shape[0]
 
         # Calculate interpolation
-        alpha = torch.rand(b_size, 1, 1, 1, requires_grad=True).to(self.device)
+        alpha = torch.rand(b_size, 1, requires_grad=True).to(self.device)
         alpha = alpha.expand_as(real_data)
 
         interpolated = alpha * real_data.data + (1 - alpha) * generated_data.data
