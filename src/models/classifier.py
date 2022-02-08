@@ -34,7 +34,7 @@ class Classifier(pl.LightningModule):
         self.preEncoder = Identity()
         if preEncoder!=None:
             self.preEncoder = preEncoder.to(self.device)
-            self.preEncoder.train()
+            self.preEncoder.eval()
 
     def forward(self, x):
         # b = x.shape[0]
