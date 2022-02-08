@@ -140,5 +140,5 @@ class DecoderBlock(nn.Module):
         y = x
         x = nn.ReLU()(self.b2(self.c2(x)))
         x = self.b3(self.c3(x))
-        x = nn.ReLU(y+x)
+        x = nn.ReLU()(y+x)
         return x
