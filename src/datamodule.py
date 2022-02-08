@@ -87,8 +87,6 @@ class CelebAData(pl.LightningDataModule):
         super().__init__()
         self.data_dir = args.data_dir
         self.images_dir = args.images_dir
-        self.partition_csv = args.partition_csv
-        self.attributes_csv = args.attributes_csv
         self.batch_size = args.batch_size
         self.num_workers = args.num_workers
 
