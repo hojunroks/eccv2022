@@ -18,17 +18,19 @@ class AutoEncoder(pl.LightningModule):
     def __init__(self, hparams, *args, **kwargs):
         super().__init__()
         self.save_hyperparameters(vars(hparams))
-        self.input_channels=3
         self.encoder = nn.Sequential(
             EncoderBlock(3, 8),
-            EncoderBlock(8, 64),
+            EncoderBlock(8, 32),
+            EncoderBlock(32, 64),
             EncoderBlock(64, 128),
-            EncoderBlock(128, 256)
+            EncoderBlock(128, 256),
+            nn.Sigmoid()
         )
         self.decoder = nn.Sequential(
             DecoderBlock(256, 128),
             DecoderBlock(128, 64),
-            DecoderBlock(64, 8),
+            DecoderBlock(64, 32),
+            DecoderBlock(32, 8),
             DecoderBlock(8, 3)
         )
         self.loss = nn.MSELoss()
@@ -56,7 +58,6 @@ class AutoEncoder(pl.LightningModule):
         }
         self.log('loss/validation', loss, on_epoch=True)
         return batch_dictionary
-        
 
     def validation_epoch_end(self, val_step_outputs):
         avg_loss = torch.stack([x['loss'] for x in val_step_outputs]).mean()
@@ -87,7 +88,7 @@ class AutoEncoder(pl.LightningModule):
         total_steps = self.hparams.max_epochs * len(self.train_dataloader())
         scheduler = {
             "scheduler": WarmupCosineLR(
-                optimizer, warmup_epochs=total_steps * 0.1, max_epochs=total_steps
+                optimizer, warmup_epochs=total_steps * 0.2, max_epochs=total_steps
             ),
             "interval": "step",
             "name": "learning_rate",
@@ -100,10 +101,6 @@ class AutoEncoder(pl.LightningModule):
         parser.add_argument("--learning_rate", type=float, required=False)
         parser.add_argument("--weight_decay", type=float, required=False)
         return parser
-        
-
-
-
 
 class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -121,8 +118,8 @@ class EncoderBlock(nn.Module):
         x = nn.ReLU()(self.b1(self.c1(x)))
         y = x
         x = nn.ReLU()(self.b2(self.c2(x)))
-        x = nn.ReLU()(self.b3(self.c3(x)))
-        x = y+x
+        x = self.b3(self.c3(x))
+        x = nn.ReLU()(y+x)
         return self.m(x)
 
 
@@ -142,6 +139,6 @@ class DecoderBlock(nn.Module):
         x = nn.ReLU()(self.b1(self.c1(x)))
         y = x
         x = nn.ReLU()(self.b2(self.c2(x)))
-        x = nn.ReLU()(self.b3(self.c3(x)))
-        x = y+x
+        x = self.b3(self.c3(x))
+        x = nn.ReLU(y+x)
         return x

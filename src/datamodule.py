@@ -21,14 +21,11 @@ class CelebAEncodedDataset(Dataset):
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        
         encoding_name = os.path.join(self.encoded_dir, self.attributes.iloc[idx, 0]).replace('jpg', 'pt')
-
         encoded_tensor = torch.load(encoding_name).cpu()[0]
         attributes = self.attributes.iloc[idx, 1:].to_numpy(dtype=np.float32)
         attributes = torch.from_numpy(attributes)
         return encoded_tensor,attributes
-
 
 class CelebAEncodedData(pl.LightningDataModule):
     def __init__(self, args):   
@@ -37,53 +34,35 @@ class CelebAEncodedData(pl.LightningDataModule):
         self.batch_size = args.batch_size
         self.num_workers = args.num_workers
         self.image_size = 128
+    
+    def get_dataloader(self, train):
+        dataset = CelebAEncodedDataset(root=self.data_dir, train=train)
+        dataloader = DataLoader(
+            dataset,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=True,
+            drop_last=True,
+            pin_memory=True,
+        )
+        return dataloader
 
     def train_dataloader(self):
-        dataset = CelebAEncodedDataset(root=self.data_dir, train=0)
-        dataloader = DataLoader(
-            dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            shuffle=True,
-            drop_last=True,
-            pin_memory=True,
-            persistent_workers=True
-        )
-        return dataloader
+        return self.get_dataloader(0)
 
     def val_dataloader(self):
-        dataset = CelebAEncodedDataset(root=self.data_dir, train=1)
-        dataloader = DataLoader(
-            dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            drop_last=True,
-            shuffle=True,
-            pin_memory=True,
-            persistent_workers=True
-        )
-        return dataloader
+        return self.get_dataloader(1)
 
     def test_dataloader(self):
-        dataset = CelebAEncodedDataset(root=self.data_dir, train=2)
-        dataloader = DataLoader(
-            dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            drop_last=True,
-            shuffle=True,
-            pin_memory=True,
-            persistent_workers=True
-        )
-        return dataloader
+        return self.get_dataloader(2)
 
 
 class CelebADataset(Dataset):
-    def __init__(self, root, train=0, transform=None):
-        partition =  pd.read_csv(os.path.join(root, 'list_eval_partition.csv'))
+    def __init__(self, root, images_dir='list_attr_celeba.csv', partition_csv='list_eval_partition.csv', attributes_csv='list_attr_celeba.csv', train=0, transform=None):
+        partition =  pd.read_csv(os.path.join(root, partition_csv))
         indices = partition.index[partition['partition']==train].tolist()
-        self.attributes = pd.read_csv(os.path.join(root, 'list_attr_celeba.csv')).iloc[indices]
-        self.images_dir = os.path.join(root, 'img_align_celeba')
+        self.attributes = pd.read_csv(os.path.join(root, attributes_csv)).iloc[indices]
+        self.images_dir = os.path.join(root, images_dir)
         self.transform = transform
     
     def __len__(self):
@@ -103,29 +82,19 @@ class CelebADataset(Dataset):
         attributes = torch.from_numpy(attributes)
         return image,attributes
 
-
 class CelebAData(pl.LightningDataModule):
     def __init__(self, args):   
         super().__init__()
         self.data_dir = args.data_dir
+        self.images_dir = args.images_dir
+        self.partition_csv = args.partition_csv
+        self.attributes_csv = args.attributes_csv
         self.batch_size = args.batch_size
         self.num_workers = args.num_workers
-        self.image_size = 128
-        self.mean = (0.4914, 0.4822, 0.4465)
-        self.std = (0.2471, 0.2435, 0.2616)
 
-    def train_dataloader(self):
-        transform = T.Compose(
-            [
-                T.ToPILImage(),
-                T.Resize((self.image_size, self.image_size)),
-                # T.RandomCrop(self.image_size, padding=8),
-                # T.RandomHorizontalFlip(),
-                T.ToTensor(),
-                # T.Normalize(self.mean, self.std),
-            ]
-        )
-        dataset = CelebADataset(root=self.data_dir, train=0, transform=transform)
+    def get_dataloader(self, train):
+        transform = T.Compose([T.ToTensor()])
+        dataset = CelebADataset(root=self.data_dir, images_dir=self.images_dir, train=train, transform=transform)
         dataloader = DataLoader(
             dataset,
             batch_size=self.batch_size,
@@ -133,50 +102,17 @@ class CelebAData(pl.LightningDataModule):
             shuffle=True,
             drop_last=True,
             pin_memory=True,
-            persistent_workers=True
         )
         return dataloader
+
+    def train_dataloader(self):
+        return self.get_dataloader(0)
 
     def val_dataloader(self):
-        transform = T.Compose(
-            [
-                T.ToPILImage(),
-                T.Resize((self.image_size, self.image_size)),
-                T.ToTensor(),
-                # T.Normalize(self.mean, self.std),
-            ]
-        )
-        dataset = CelebADataset( root=self.data_dir, train=1, transform=transform)
-        dataloader = DataLoader(
-            dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            drop_last=True,
-            pin_memory=True,
-            persistent_workers=True
-        )
-        return dataloader
+        return self.get_dataloader(1)
 
     def test_dataloader(self):
-        transform = T.Compose(
-            [
-                T.ToPILImage(),
-                T.Resize((self.image_size, self.image_size)),
-                T.ToTensor(),
-                # T.Normalize(self.mean, self.std),
-            ]
-        )
-        dataset = CelebADataset( root=self.data_dir, train=2, transform=transform)
-        dataloader = DataLoader(
-            dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            drop_last=True,
-            pin_memory=True,
-            persistent_workers=True
-        )
-        return dataloader
-
+        return self.get_dataloader(2)
 
 
 class CelebAResizedDataset(Dataset):
@@ -213,11 +149,7 @@ class CelebAResizedData(pl.LightningDataModule):
         self.num_workers = args.num_workers
 
     def train_dataloader(self):
-        transform = T.Compose(
-            [
-                T.ToTensor(),
-            ]
-        )
+        transform = T.Compose([T.ToTensor(),])
         dataset = CelebAResizedDataset(root=self.data_dir, transform=transform)
         dataloader = DataLoader(
             dataset,
@@ -226,7 +158,6 @@ class CelebAResizedData(pl.LightningDataModule):
             shuffle=True,
             drop_last=True,
             pin_memory=True,
-            persistent_workers=True
         )
         return dataloader
 
