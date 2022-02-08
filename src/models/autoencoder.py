@@ -27,8 +27,7 @@ class AutoEncoder(pl.LightningModule):
             DecoderBlock(128, 64),
             DecoderBlock(64, 32),
             DecoderBlock(32, 8),
-            DecoderBlock(8, 3),
-            nn.Sigmoid()
+            DecoderBlock(8, 3)
         )
         self.loss = nn.MSELoss()
     
@@ -134,9 +133,9 @@ class DecoderBlock(nn.Module):
         
     
     def forward(self, x):
-        x = nn.ReLU()(self.b1(self.c1(x)))
         y = x
         x = nn.ReLU()(self.b2(self.c2(x)))
         x = self.b3(self.c3(x))
         x = nn.ReLU()(y+x)
+        x = nn.ReLU()(self.b1(self.c1(x)))
         return x
