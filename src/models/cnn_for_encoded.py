@@ -26,9 +26,9 @@ class EncoderBlock(nn.Module):
         super().__init__()
         self.c1 = nn.Conv2d(in_channels, out_channels, 3)
         self.b1 = nn.InstanceNorm2d(out_channels)
-        self.c2 = nn.Conv2d(out_channels, out_channels, 3, padding="same")
+        self.c2 = nn.Conv2d(out_channels, out_channels, 3, padding=1)
         self.b2 = nn.InstanceNorm2d(out_channels)
-        self.c3 = nn.Conv2d(out_channels, out_channels, 3, padding="same")
+        self.c3 = nn.Conv2d(out_channels, out_channels, 3, padding=1)
         self.b3 = nn.InstanceNorm2d(out_channels)
     
     def forward(self, x):

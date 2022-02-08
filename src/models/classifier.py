@@ -17,11 +17,12 @@ class Classifier(pl.LightningModule):
     #################################################################################
     # A simple classifier. 
     #################################################################################
-    def __init__(self, hparams, model, target_attr, preEncoder=None, *args, **kwargs):
+    def __init__(self, hparams, model, target_attr, preEncoder=None, translator=None, *args, **kwargs):
         super().__init__()
         self.hparams.update(vars(hparams))
         self.model = model
         self.target_attr = target_attr
+        self.translator=translator
         self.fc = nn.Sequential(
             nn.Linear(1000, 512),
             nn.ReLU(),
@@ -63,7 +64,14 @@ class Classifier(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_index):
-        loss, accuracy, auroc = self.shared_step(batch, batch_index)
+        x, y = batch
+        x = self.preEncoder(x)
+        x = self.translator(x)
+        y_hat = self.fc(self.model(x))
+        y_true = ((y[:,self.target_attr]+1)/2).long()
+        loss = F.cross_entropy(y_hat, y_true)
+        accuracy = self.accuracy(y_hat, y_true)
+        auroc = self.auroc(y_hat, y_true)
         self.log('loss/val', loss)
         self.log('acc/val', accuracy)
         self.log('auroc/val', auroc)
