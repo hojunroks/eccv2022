@@ -82,7 +82,7 @@ class AutoEncoder(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
             self.parameters(), 
-            lr=self.hparams.learning_rate, 
+            lr=self.hparams.lr, 
             weight_decay=self.hparams.weight_decay
         )
         total_steps = self.hparams.max_epochs * len(self.train_dataloader())
@@ -91,7 +91,7 @@ class AutoEncoder(pl.LightningModule):
                 optimizer, warmup_epochs=total_steps * 0.2, max_epochs=total_steps
             ),
             "interval": "step",
-            "name": "learning_rate",
+            "name": "lr",
         }
         return [optimizer], [scheduler]
 
