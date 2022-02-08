@@ -99,7 +99,6 @@ class CelebAData(pl.LightningDataModule):
             num_workers=self.num_workers,
             shuffle=True,
             drop_last=True,
-            pin_memory=True,
             persistent_workers=True
         )
         return dataloader
