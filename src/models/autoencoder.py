@@ -69,9 +69,9 @@ class AutoEncoder(pl.LightningModule):
         if len(idx)==8:
             for i in range(4):
                 ax = fig.add_subplot(2,4,2*i+1)
-                plt.imshow((orig_images[idx[i]].permute(1, 2, 0).cpu()*255).type(torch.int))
+                plt.imshow((orig_images[idx[i]].permute(1, 2, 0).cpu()))
                 ax = fig.add_subplot(2,4,2*i+2)
-                plt.imshow((made_images[idx[i]].permute(1, 2, 0).cpu()*255).type(torch.int))
+                plt.imshow((made_images[idx[i]].permute(1, 2, 0).cpu()))
         plt.tight_layout()
         self.logger.experiment.add_figure('figure', fig, global_step=self.current_epoch)
         return
