@@ -126,9 +126,9 @@ class DecoderBlock(nn.Module):
         self.c1 = nn.ConvTranspose2d(in_channels, out_channels, 3, stride=2, padding=1, output_padding=1)
         self.b1 = nn.BatchNorm2d(out_channels)
         self.c2 = nn.ConvTranspose2d(in_channels, in_channels, 3, padding=1)
-        self.b2 = nn.BatchNorm2d(out_channels)
+        self.b2 = nn.BatchNorm2d(in_channels)
         self.c3 = nn.ConvTranspose2d(in_channels, in_channels, 3, padding=1)
-        self.b3 = nn.BatchNorm2d(out_channels)
+        self.b3 = nn.BatchNorm2d(in_channels)
         
         
     
