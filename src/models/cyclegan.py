@@ -3,13 +3,14 @@ import itertools
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
+import matplotlib.pyplot as plt
 import random
 from argparse import ArgumentParser
-import gc
+from torchvision.utils import make_grid
 from src.models.cycleganparts import CycleGanCritic, CycleGanGenerator, CycleGanCriticFC, CycleGanGeneratorFC
 
 class CycleGan(pl.LightningModule):
-    def __init__(self, lr=1e-4, b1=0.5, b2=0.99, *args, **kwargs):
+    def __init__(self, lr=1e-4, b1=0.5, b2=0.99, decoder=None, *args, **kwargs):
         super().__init__()
         self.lr = lr
         self.b1 = b1
@@ -25,6 +26,8 @@ class CycleGan(pl.LightningModule):
 
         self.fake_A_buffer = ReplayBuffer()
         self.fake_B_buffer = ReplayBuffer()
+
+        self.decoder = decoder
 
     def gan_loss(self, y_hat, y):
         return torch.mean(y_hat)-torch.mean(y)
@@ -116,6 +119,62 @@ class CycleGan(pl.LightningModule):
                 self.log(key, tqdm_dict[key])
             output = OrderedDict({"loss": loss_d_b, "progress_bar": tqdm_dict, "log": tqdm_dict})
             return output
+
+    def validation_step(self, batch, batch_idx):
+        image_batch, attributes_batch = batch
+        target_attrs = (attributes_batch[:, self.target_attr]+1)/2
+        A_idxes = torch.nonzero(target_attrs)[:,0]
+        B_idxes = torch.nonzero(1-target_attrs)[:,0]
+        As = image_batch[A_idxes]
+        Bs = image_batch[B_idxes]
+        real_A_imgs = self.decoder(As)
+        fake_B_imgs = self.decoder(self.A2B(As))
+        reconstructed_A_imgs = self.decoder(self.B2A(self.A2B(As)))
+        real_B_imgs = self.decoder(Bs)
+        fake_A_imgs = self.decoder(self.B2A(Bs))
+        reconstructed_B_imgs = self.decoder(self.A2B(self.B2A(Bs)))
+        batch_dictionary={
+            "real_As": real_A_imgs,
+            "fake_Bs": fake_B_imgs,
+            "reconstructed_As": reconstructed_A_imgs,
+            "real_Bs": real_B_imgs,
+            "fake_As": fake_A_imgs,
+            "reconstructed_Bs": reconstructed_B_imgs
+        }
+        return batch_dictionary
+
+    def validation_epoch_end(self, val_step_outputs):
+        idxes = random.sample(range(len(val_step_outputs)), 4)
+        val_step_outputs = val_step_outputs[idxes]
+        real_As = make_grid(torch.cat([output["real_As"] for output in val_step_outputs]), nrow=1)
+        fake_Bs = make_grid(torch.cat([output["fake_Bs"] for output in val_step_outputs]), nrow=1)
+        reconstructed_As = make_grid(torch.cat([output["reconstructed_As"] for output in val_step_outputs]), nrow=1)
+        real_Bs = make_grid(torch.cat([output["real_Bs"] for output in val_step_outputs]), nrow=1)
+        fake_As = make_grid(torch.cat([output["fake_As"] for output in val_step_outputs]), nrow=1)
+        reconstructed_Bs = make_grid(torch.cat([output["reconstructed_Bs"] for output in val_step_outputs]), nrow=1)
+        fig = plt.figure(figsize=(12, 18))
+        fig.add_subplot(1,6,1)
+        plt.axis('off')
+        plt.imshow(real_As.permute(1,2,0).data.cpu().numpy())
+        fig.add_subplot(1,6,2)
+        plt.axis('off')
+        plt.imshow(fake_Bs.permute(1,2,0).data.cpu().numpy())
+        fig.add_subplot(1,6,3)
+        plt.axis('off')
+        plt.imshow(reconstructed_As.permute(1,2,0).data.cpu().numpy())
+        fig.add_subplot(1,6,4)
+        plt.axis('off')
+        plt.imshow(real_Bs.permute(1,2,0).data.cpu().numpy())
+        fig.add_subplot(1,6,5)
+        plt.axis('off')
+        plt.imshow(fake_As.permute(1,2,0).data.cpu().numpy())
+        fig.add_subplot(1,6,6)
+        plt.axis('off')
+        plt.imshow(reconstructed_Bs.permute(1,2,0).data.cpu().numpy())
+        plt.tight_layout()
+        
+        self.logger.experiment.add_figure('figure', fig, global_step=self.current_epoch)
+        return
 
     def configure_optimizers(self):
         b1 = self.hparams.b1
