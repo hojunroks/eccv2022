@@ -105,11 +105,11 @@ class AutoEncoder(pl.LightningModule):
 class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
-        self.c1 = nn.Conv2d(in_channels, out_channels, 3, padding="same")
+        self.c1 = nn.Conv2d(in_channels, out_channels, 3, padding=1)
         self.b1 = nn.BatchNorm2d(out_channels)
-        self.c2 = nn.Conv2d(out_channels, out_channels, 3, padding="same")
+        self.c2 = nn.Conv2d(out_channels, out_channels, 3, padding=1)
         self.b2 = nn.BatchNorm2d(out_channels)
-        self.c3 = nn.Conv2d(out_channels, out_channels, 3, padding="same")
+        self.c3 = nn.Conv2d(out_channels, out_channels, 3, padding=1)
         self.b3 = nn.BatchNorm2d(out_channels)
         self.m = nn.MaxPool2d(2)
         
