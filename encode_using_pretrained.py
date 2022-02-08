@@ -38,7 +38,7 @@ def main():
     print("START ENCODING...")
     with torch.no_grad():
         for i in range(attributes['image_id'].count()):
-            img = attributes['image_id'][0]
+            img = attributes['image_id'][i]
             t = torch.unsqueeze(T.ToTensor()(io.imread(os.path.join(images_dir, img))), 0).to('cuda:0')
             encoded = encoder(t).squeeze().flatten().cpu().numpy()
             np.save(os.path.join(encoded_dir, img.replace('.jpg', '.npy')), encoded)
