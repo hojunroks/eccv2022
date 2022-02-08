@@ -4,7 +4,7 @@ from src.datamodule import CelebAData
 import pytorch_lightning as pl
 from datetime import datetime
 from pytorch_lightning.loggers import TensorBoardLogger
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from src.utils import parse_config
 
 def main():
@@ -52,9 +52,10 @@ def main():
     ###########################
     print("START TRAINING...")
     checkpoint_callback = ModelCheckpoint(monitor="loss/validation")
+    lr_monitor = LearningRateMonitor(logging_interval='step')
     trainer = pl.Trainer.from_argparse_args(args,
         logger=logger,
-        callbacks = [checkpoint_callback],
+        callbacks = [checkpoint_callback, lr_monitor],
     )
     trainer.fit(autoencoder, datamodule=dm)
     trainer.save_checkpoint(logger.log_dir+logger.name+"/"+logger.name+"celeba_test.ckpt")

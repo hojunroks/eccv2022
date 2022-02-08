@@ -1,15 +1,11 @@
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import random
-import numpy as np
 import matplotlib.pyplot as plt
 from argparse import ArgumentParser
-from torch.nn.modules.container import Sequential
-from torchvision import models
+from torchvision.utils import make_grid
 from src.scheduler import WarmupCosineLR
-from torchmetrics import Accuracy
 
 class AutoEncoder(pl.LightningModule):
     #################################################################################
@@ -60,19 +56,20 @@ class AutoEncoder(pl.LightningModule):
         return batch_dictionary
 
     def validation_epoch_end(self, val_step_outputs):
-        avg_loss = torch.stack([x['loss'] for x in val_step_outputs]).mean()
-        self.logger.experiment.add_scalar("Loss/validation", avg_loss, self.current_epoch)
-        orig_images = torch.stack([output["orig_img"][0] for output in val_step_outputs])
-        made_images = torch.stack([output["prediction"][0] for output in val_step_outputs])
-        idx = random.sample(range(len(orig_images)), min(len(orig_images), 8))
+        orig_images = torch.cat([output["orig_img"] for output in val_step_outputs])
+        made_images = torch.cat([output["prediction"] for output in val_step_outputs])
+        idxes = random.sample(range(orig_images.shape[0]), 25)
+        orig_images = make_grid(orig_images[idxes], nrow=5)
+        made_images = make_grid(made_images[idxes], nrow=5)
         fig = plt.figure(figsize=(12, 12))
-        if len(idx)==8:
-            for i in range(4):
-                ax = fig.add_subplot(2,4,2*i+1)
-                plt.imshow((orig_images[idx[i]].permute(1, 2, 0).cpu()))
-                ax = fig.add_subplot(2,4,2*i+2)
-                plt.imshow((made_images[idx[i]].permute(1, 2, 0).cpu()))
+        fig.add_subplot(1,2,1)
+        plt.axis('off')
+        plt.imshow(orig_images.permute(1,2,0).data.cpu().numpy())
+        fig.add_subplot(1,2,2)
+        plt.axis('off')
+        plt.imshow(made_images.permute(1,2,0).data.cpu().numpy())
         plt.tight_layout()
+        
         self.logger.experiment.add_figure('figure', fig, global_step=self.current_epoch)
         return
 
