@@ -151,7 +151,7 @@ class CycleGan(pl.LightningModule):
         real_Bs = make_grid(torch.cat([output["real_Bs"] for output in val_step_outputs])[idxes], nrow=1)
         fake_As = make_grid(torch.cat([output["fake_As"] for output in val_step_outputs])[idxes], nrow=1)
         reconstructed_Bs = make_grid(torch.cat([output["reconstructed_Bs"] for output in val_step_outputs])[idxes], nrow=1)
-        fig = plt.figure(figsize=(12, 18))
+        fig = plt.figure(figsize=(18, 12))
         fig.add_subplot(1,6,1)
         plt.axis('off')
         plt.imshow(real_As.permute(1,2,0).data.cpu().numpy())
