@@ -46,18 +46,22 @@ class CycleGanGenerator(nn.Module):
 class CycleGanCriticFC(nn.Module):
     def __init__(self):
         super().__init__()
-        # self.f1 = FCBlock(1024, 512)
-        # self.f2 = FCBlock(512, 256)
-        # self.f3 = FCBlock(256, 256)
-        # self.f4 = nn.Linear(256, 1)
-        self.temp = nn.Linear(1024,1)
+        self.s = nn.Sequential(
+            nn.Linear(1024, 512),
+            nn.BatchNorm1d(512),
+            nn.LeakyReLU(0.1),
+            nn.Linear(512, 256),
+            nn.BatchNorm1d(256),
+            nn.LeakyReLU(0.1),
+            nn.Linear(256, 256),
+            nn.BatchNorm1d(256),
+            nn.LeakyReLU(0.1),
+            nn.Linear(256, 1),
+        )
+        
 
     def forward(self, x):
-        # x = self.f1(x)
-        # x = self.f2(x)
-        # x = self.f3(x)
-        # x = nn.Sigmoid()(self.f4(x))
-        x = self.temp(x)
+        x = self.s(x)
         return x
 
 class CycleGanGeneratorFC(nn.Module):
@@ -65,15 +69,15 @@ class CycleGanGeneratorFC(nn.Module):
         super().__init__()
         self.f1 = FCBlock(1024, 1024)
         self.f2 = FCBlock(1024, 1024)
-        self.f3 = FCBlock(1024, 1024)
+        # self.f3 = FCBlock(1024, 1024)
         self.f4 = FCBlock(1024, 1024)
-        self.f5 = FCBlock(1024, 1024)
+        self.f5 = nn.Linear(1024, 1024)
 
     def forward(self, x):
         x1 = self.f1(x)
         x2 = self.f2(x1)
-        x3 = self.f3(x2)
-        x4 = self.f4(x3)
+        # x3 = self.f3(x2)
+        x4 = self.f4(x2)
         x5 = self.f5(x4)
         return x5
 
@@ -83,9 +87,10 @@ class FCBlock(nn.Module):
         super().__init__()
         self.f1 = nn.Linear(in_channels, out_channels)
         self.b1 = nn.BatchNorm1d(out_channels)
+        self.d1 = nn.Dropout()
     
     def forward(self, x):
-        x = nn.ReLU()(self.b1(self.f1(x))+x)
+        x = self.d1(nn.LeakyReLU(0.1)(self.b1(self.f1(x))+x))
         return x
 
 
@@ -101,12 +106,12 @@ class EncoderBlock(nn.Module):
         self.b3 = nn.InstanceNorm2d(out_channels)
     
     def forward(self, x):
-        x = nn.LeakyReLU(0.2)(self.b1(self.c1(x)))
+        x = nn.LeakyReLU(0.02)(self.b1(self.c1(x)))
         y = x
-        x = nn.LeakyReLU(0.2)(self.b2(self.c2(x)))
+        x = nn.LeakyReLU(0.02)(self.b2(self.c2(x)))
         x = self.b3(self.c3(x))
         x = y+x
-        return nn.LeakyReLU(0.2)(x)
+        return nn.LeakyReLU(0.02)(x)
 
 class DecoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):

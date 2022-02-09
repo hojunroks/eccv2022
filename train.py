@@ -34,7 +34,7 @@ def main():
     dm = CelebAEncodedData(args)    
     autoencoder = AutoEncoder.load_from_checkpoint(hparams=args, checkpoint_path=args.pretrained_autoencoder)
     decoder = autoencoder.decoder.eval()
-    translator = CycleGan(args, target_attr=20, decoder=decoder)
+    translator = CycleGan(decoder, args)
     logger = TensorBoardLogger('logs/cgan/{}'.format(datetime.now().strftime("/%m%d")), name='')
 
     ###########################
