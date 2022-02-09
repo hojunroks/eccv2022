@@ -29,7 +29,7 @@ class CycleGan(pl.LightningModule):
 
 
     def gan_loss(self, y_hat, y):
-        return nn.MSELoss(y_hat, y)
+        return nn.MSELoss()(y_hat, y)
 
     def cycle_loss(self, y_hat, y):
         return nn.L1Loss()(y_hat, y)
@@ -38,15 +38,7 @@ class CycleGan(pl.LightningModule):
         return nn.L1Loss()(y_hat, y)
 
     def training_step(self, batch, batch_idx, optimizer_idx):
-        image_batch, attributes_batch = batch
-        target_attrs = (attributes_batch[:, self.hparams.target_attr]+1)/2
-        A_idxes = torch.nonzero(target_attrs)[:,0]
-        B_idxes = torch.nonzero(1-target_attrs)[:,0]
-        smaller_size = min(A_idxes.shape[0], B_idxes.shape[0])
-        A_idxes = A_idxes[:smaller_size]
-        B_idxes = B_idxes[:smaller_size]
-        A_imgs = image_batch[A_idxes]
-        B_imgs = image_batch[B_idxes]
+        A_imgs, B_imgs, attribute_as, attribute_bs = batch
 
         
 
@@ -79,7 +71,6 @@ class CycleGan(pl.LightningModule):
             loss_BAB_recon = self.cycle_loss(recon_B, B_imgs)*self.hparams.lambda_B
 
             generator_loss = loss_identity_B + loss_identity_A + loss_gan_A2B + loss_gan_B2A + loss_ABA_recon + loss_BAB_recon
-            # generator_loss = loss_identity_B + loss_identity_A + loss_ABA_recon + loss_BAB_recon
             tqdm_dict = {
                 "g_loss": generator_loss,
                 "id_b_loss": loss_identity_B,
@@ -135,12 +126,7 @@ class CycleGan(pl.LightningModule):
             return output
 
     def validation_step(self, batch, batch_idx):
-        image_batch, attributes_batch = batch
-        target_attrs = (attributes_batch[:, self.hparams.target_attr]+1)/2
-        A_idxes = torch.nonzero(target_attrs)[:,0]
-        B_idxes = torch.nonzero(1-target_attrs)[:,0]
-        As = image_batch[A_idxes]
-        Bs = image_batch[B_idxes]
+        As, Bs, attribute_as, attribute_bs = batch
         real_A_imgs = self.decoder(nn.Unflatten(1, (256, 2, 2))(As))
         fake_B_imgs = self.decoder(nn.Unflatten(1, (256, 2, 2))(self.A2B(As)))
         reconstructed_A_imgs = self.decoder(nn.Unflatten(1, (256, 2, 2))(self.B2A(self.A2B(As))))
@@ -227,7 +213,6 @@ class CycleGan(pl.LightningModule):
         parser.add_argument("--lr", type=float, required=False)
         parser.add_argument("--b1", type=float, required=False)
         parser.add_argument("--b2", type=float, required=False)
-        parser.add_argument("--target_attr", type=int, required=False)
         parser.add_argument("--lambda_A", type=float, required=False)
         parser.add_argument("--lambda_B", type=float, required=False)
         parser.add_argument("--lambda_idt", type=float, required=False)

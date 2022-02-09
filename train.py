@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 from src.models.cyclegan import CycleGan
 from src.models.autoencoder import AutoEncoder
-from src.datamodule import CelebAEncodedData
+from src.datamodule import CelebACycleganData
 import pytorch_lightning as pl
 from datetime import datetime
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -19,6 +19,7 @@ def main():
     parser.add_argument('--data_dir', type=str, required=False)
     parser.add_argument("--batch_size", type=int, required=False)
     parser.add_argument("--num_workers", type=int, required=False)
+    parser.add_argument("--target_attr", type=str, required=False)
 
     # add all the available trainer options to argparse
     # ie: now --gpus --num_nodes ... --fast_dev_run all work in the cli
@@ -31,7 +32,7 @@ def main():
     ###########################
     # INITIALIZE MODULES
     ###########################
-    dm = CelebAEncodedData(args)    
+    dm = CelebACycleganData(args)    
     autoencoder = AutoEncoder.load_from_checkpoint(hparams=args, checkpoint_path=args.pretrained_autoencoder)
     decoder = autoencoder.decoder.eval()
     translator = CycleGan(decoder, args)

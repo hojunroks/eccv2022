@@ -21,10 +21,10 @@ autoencoder:
 
 translator:
   max_epochs: 100
-  batch_size: 8
+  batch_size: 16
   num_workers: 4
   lr: 0.0002
-  target_attr: 21
+  target_attr: Mouth_Slightly_Open
   b1: 0.5
   b2: 0.999
   accumulate_grad_batches: 1

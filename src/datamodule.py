@@ -8,6 +8,74 @@ from skimage import io
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms as T
 
+
+class CelebACycleganDataset(Dataset):
+    def __init__(self, root, partition_csv='list_eval_partition.csv', attributes_csv='list_attr_celeba.csv', train=0, encoded_dir='data_encoded', target_attr='', transform=None):
+        partition =  pd.read_csv(os.path.join(root, partition_csv))
+        indices = partition.index[partition['partition']==train].tolist()
+        self.attributes = pd.read_csv(os.path.join(root, attributes_csv)).iloc[indices].reset_index()
+        self.a_indices = self.attributes.index[self.attributes[target_attr]==1].tolist()
+        self.b_indices = self.attributes.index[self.attributes[target_attr]==-1].tolist()
+        self.a_attributes = self.attributes.iloc[self.a_indices]
+        self.b_attributes = self.attributes.iloc[self.b_indices]
+        self.encoded_dir = encoded_dir
+        
+    def __len__(self):
+        return max(len(self.a_indices), len(self.b_indices))
+    
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+        idx_a = idx
+        idx_b = idx
+        if(len(self.a_indices)<len(self.b_indices)):
+            # idx_a = [idx % len(self.a_indices) for idx in idx_a]
+            idx_a = idx_a % len(self.a_indices)
+        else:
+            # idx_b = [idx % len(self.b_indices) for idx in idx_b]
+            idx_b = idx_b % len(self.b_indices)
+        
+        
+        encoded_a = torch.from_numpy(np.load(os.path.join(self.encoded_dir, self.a_attributes.iloc[idx_a, 1]).replace('.jpg', '.npy')))
+        attributes_a = torch.from_numpy(self.a_attributes.iloc[idx_a, 2:].to_numpy(dtype=np.float32))
+
+        encoded_b = torch.from_numpy(np.load(os.path.join(self.encoded_dir, self.b_attributes.iloc[idx_b, 1]).replace('.jpg', '.npy')))
+        attributes_b = torch.from_numpy(self.b_attributes.iloc[idx_b, 2:].to_numpy(dtype=np.float32))
+        
+        return encoded_a, encoded_b, attributes_a, attributes_b
+
+
+class CelebACycleganData(pl.LightningDataModule):
+    def __init__(self, args):   
+        super().__init__()
+        self.data_dir = args.data_dir
+        self.batch_size = args.batch_size
+        self.num_workers = args.num_workers
+        self.target_attr = args.target_attr
+    
+    def get_dataloader(self, train):
+        dataset = CelebACycleganDataset(root=self.data_dir, train=train, target_attr=self.target_attr)
+        dataloader = DataLoader(
+            dataset,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=True,
+            drop_last=True,
+            pin_memory=True,
+            persistent_workers=True
+        )
+        return dataloader
+
+    def train_dataloader(self):
+        return self.get_dataloader(0)
+
+    def val_dataloader(self):
+        return self.get_dataloader(1)
+
+    def test_dataloader(self):
+        return self.get_dataloader(2)
+
+
 class CelebAEncodedDataset(Dataset):
     def __init__(self, root, partition_csv='list_eval_partition.csv', attributes_csv='list_attr_celeba.csv', train=0, encoded_dir='data_encoded', transform=None):
         partition =  pd.read_csv(os.path.join(root, partition_csv))
