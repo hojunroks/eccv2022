@@ -11,9 +11,9 @@ from src.models.cycleganparts import CycleGanCritic, CycleGanGenerator, CycleGan
 from src.scheduler import WarmupCosineLR
 
 class CycleGan(pl.LightningModule):
-    def __init__(self, decoder=None, *args, **kwargs):
+    def __init__(self, decoder, hparams, *args, **kwargs):
         super().__init__()
-        self.save_hyperparameters()
+        self.save_hyperparameters(vars(hparams))
         
 
         self.A2B = CycleGanGeneratorFC()
