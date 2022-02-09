@@ -46,16 +46,18 @@ class CycleGanGenerator(nn.Module):
 class CycleGanCriticFC(nn.Module):
     def __init__(self):
         super().__init__()
-        self.f1 = FCBlock(1024, 512)
-        self.f2 = FCBlock(512, 256)
-        self.f3 = FCBlock(256, 256)
-        self.f4 = nn.Linear(256, 1)
+        # self.f1 = FCBlock(1024, 512)
+        # self.f2 = FCBlock(512, 256)
+        # self.f3 = FCBlock(256, 256)
+        # self.f4 = nn.Linear(256, 1)
+        self.temp = nn.Linear(1024,1)
 
     def forward(self, x):
-        x = self.f1(x)
-        x = self.f2(x)
-        x = self.f3(x)
-        x = nn.Sigmoid()(self.f4(x))
+        # x = self.f1(x)
+        # x = self.f2(x)
+        # x = self.f3(x)
+        # x = nn.Sigmoid()(self.f4(x))
+        x = self.temp(x)
         return x
 
 class CycleGanGeneratorFC(nn.Module):
