@@ -21,15 +21,16 @@ autoencoder:
 
 translator:
   max_epochs: 100
-  batch_size: 16
-  num_workers: 4
-  lr: 0.0002
+  batch_size: 2
+  num_workers: 2
+  lr_g: 0.0005
+  lr_d: 0.0001
   target_attr: Mouth_Slightly_Open
   b1: 0.5
   b2: 0.999
   accumulate_grad_batches: 1
-  lambda_A: 10
-  lambda_B: 10
+  lambda_A: 20
+  lambda_B: 20
   lambda_idt: 0.5
 
 classifier:

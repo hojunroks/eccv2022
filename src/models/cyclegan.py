@@ -177,40 +177,42 @@ class CycleGan(pl.LightningModule):
 
     def configure_optimizers(self):
         total_steps = self.hparams.max_epochs * len(self.trainer._data_connector._train_dataloader_source.dataloader())
-        lr = self.hparams.lr
+        lr_g = self.hparams.lr_g
+        lr_d = self.hparams.lr_d
         b1 = self.hparams.b1
         b2 = self.hparams.b2
 
-        opt_g = torch.optim.Adam(itertools.chain(self.A2B.parameters(), self.B2A.parameters()), lr=lr, betas=(b1, b2))
-        opt_d_a = torch.optim.Adam(itertools.chain(self.d_A.parameters()), lr=lr, betas=(b1, b2))
-        opt_d_b = torch.optim.Adam(itertools.chain(self.d_B.parameters()), lr=lr, betas=(b1, b2))
+        opt_g = torch.optim.Adam(itertools.chain(self.A2B.parameters(), self.B2A.parameters()), lr=lr_g, betas=(b1, b2))
+        opt_d_a = torch.optim.Adam(itertools.chain(self.d_A.parameters()), lr=lr_d, betas=(b1, b2))
+        opt_d_b = torch.optim.Adam(itertools.chain(self.d_B.parameters()), lr=lr_d, betas=(b1, b2))
         scheduler_g = {
             "scheduler": WarmupCosineLR(
                 opt_g, warmup_epochs=total_steps * 0.05, max_epochs=total_steps
             ),
             "interval": "step",
-            "name": "lr",
+            "name": "lr_g",
         }
         scheduler_d_a = {
             "scheduler": WarmupCosineLR(
                 opt_d_a, warmup_epochs=total_steps * 0.05, max_epochs=total_steps
             ),
             "interval": "step",
-            "name": "lr",
+            "name": "lr_d",
         }
         scheduler_d_b = {
             "scheduler": WarmupCosineLR(
                 opt_d_b, warmup_epochs=total_steps * 0.05, max_epochs=total_steps
             ),
             "interval": "step",
-            "name": "lr",
+            "name": "lr_d",
         }
         return [opt_g, opt_d_a, opt_d_b] , [scheduler_g, scheduler_d_a, scheduler_d_b]
 
     @staticmethod
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--lr", type=float, required=False)
+        parser.add_argument("--lr_g", type=float, required=False)
+        parser.add_argument("--lr_d", type=float, required=False)
         parser.add_argument("--b1", type=float, required=False)
         parser.add_argument("--b2", type=float, required=False)
         parser.add_argument("--lambda_A", type=float, required=False)
