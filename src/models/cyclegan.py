@@ -144,7 +144,7 @@ class CycleGan(pl.LightningModule):
         return batch_dictionary
 
     def validation_epoch_end(self, val_step_outputs):
-        idxes = random.sample(range(val_step_outputs[0]['real_As'].shape[0]), 4)
+        idxes = random.sample(range(val_step_outputs[0]['real_As'].shape[0]), min(4,val_step_outputs[0]['real_As'].shape[0]))
         real_As = make_grid(torch.cat([output["real_As"] for output in val_step_outputs])[idxes], nrow=1)
         fake_Bs = make_grid(torch.cat([output["fake_Bs"] for output in val_step_outputs])[idxes], nrow=1)
         reconstructed_As = make_grid(torch.cat([output["reconstructed_As"] for output in val_step_outputs])[idxes], nrow=1)
