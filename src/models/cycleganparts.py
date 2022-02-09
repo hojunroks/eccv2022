@@ -68,18 +68,18 @@ class CycleGanGeneratorFC(nn.Module):
     def __init__(self):
         super().__init__()
         self.f1 = FCBlock(1024, 1024)
-        self.f2 = FCBlock(1024, 1024)
+        # self.f2 = FCBlock(1024, 1024)
         # self.f3 = FCBlock(1024, 1024)
         self.f4 = FCBlock(1024, 1024)
         self.f5 = nn.Linear(1024, 1024)
 
     def forward(self, x):
         x1 = self.f1(x)
-        x2 = self.f2(x1)
+        # x2 = self.f2(x1)
         # x3 = self.f3(x2)
-        x4 = self.f4(x2)
-        x5 = self.f5(x4)
-        return x5
+        x4 = self.f4(x1)
+        x5 = nn.LeakyReLU(0.1)(self.f5(x4))
+        return x4+x5
 
 
 class FCBlock(nn.Module):
