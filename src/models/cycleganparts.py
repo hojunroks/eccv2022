@@ -68,12 +68,12 @@ class CycleGanGeneratorFC(nn.Module):
         self.f5 = FCBlock(1024, 1024)
 
     def forward(self, x):
-        x = self.f1(x)
-        x = self.f2(x)
-        x = self.f3(x)
-        x = self.f4(x)
-        x = self.f5(x)
-        return x
+        x1 = self.f1(x)
+        x2 = self.f2(x1)
+        x3 = self.f3(x2)
+        x4 = self.f4(x3)
+        x5 = self.f5(x4)
+        return x5
 
 
 class FCBlock(nn.Module):
