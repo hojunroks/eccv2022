@@ -4,7 +4,8 @@ common:
   data_dir: "./data_preprocessed/celeba"
   images_dir: "img_align_celeba_64"
   encoded_dir: "./data_encoded"
-  pretrained_autoencoder: "pretrained/epoch=99-step=15799.ckpt"
+  pretrained_autoencoder: "pretrained/autoencoder.ckpt"
+  id_gen: "pretrained/identity_generator.ckpt"
   deterministic: True
   precision: 16
   gpus: 2
@@ -38,6 +39,7 @@ classifier:
   batch_size: 2048
   num_workers: 8
   lr: 0.001
+  weight_decay: 0.00001
   accumulate_grad_batches: 1
 
 
