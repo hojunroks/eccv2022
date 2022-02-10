@@ -5,6 +5,7 @@ common:
   images_dir: "img_align_celeba_64"
   encoded_dir: "./data_encoded"
   pretrained_autoencoder: "pretrained/autoencoder.ckpt"
+  pretrained_classifier: "pretrained/cls_20.ckpt"
   id_gen: "pretrained/identity_generator.ckpt"
   deterministic: True
   precision: 16
