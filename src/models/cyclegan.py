@@ -71,6 +71,7 @@ class CycleGan(pl.LightningModule):
             loss_BAB_recon = self.cycle_loss(recon_B, B_imgs)*self.hparams.lambda_B
 
             generator_loss = loss_identity_B + loss_identity_A + loss_gan_A2B + loss_gan_B2A + loss_ABA_recon + loss_BAB_recon
+            # generator_loss = loss_identity_B + loss_identity_A + loss_ABA_recon + loss_BAB_recon
             tqdm_dict = {
                 "g_loss": generator_loss,
                 "id_b_loss": loss_identity_B,
