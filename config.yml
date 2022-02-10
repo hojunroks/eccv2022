@@ -41,6 +41,7 @@ classifier:
   lr: 0.001
   weight_decay: 0.00001
   accumulate_grad_batches: 1
+  target_attr: 20
 
 
 fvae:

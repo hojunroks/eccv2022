@@ -12,14 +12,15 @@ class EncodedClassifierNetwork(nn.Module):
         self.s = nn.Sequential(
             nn.Linear(1024, 512),
             nn.BatchNorm1d(512),
-            nn.LeakyReLU(0.1),
+            nn.ReLU(),
             nn.Linear(512, 256),
             nn.BatchNorm1d(256),
-            nn.LeakyReLU(0.1),
+            nn.ReLU(),
             nn.Linear(256, 256),
             nn.BatchNorm1d(256),
-            nn.LeakyReLU(0.1),
-            nn.Linear(256, 1),
+            nn.ReLU(),
+            nn.Linear(256, 2),
+            nn.Softmax()
         )
         
 
@@ -32,12 +33,11 @@ class EncodedClassifier(pl.LightningModule):
     #################################################################################
     # A simple classifier. 
     #################################################################################
-    def __init__(self, hparams, model, target_attr, preEncoder=None, translator=None, *args, **kwargs):
+    def __init__(self, hparams, target_attr, *args, **kwargs):
         super().__init__()
-        self.hparams.update(vars(hparams))
+        self.save_hyperparameters(vars(hparams))
         self.model = EncodedClassifierNetwork()
         self.target_attr = target_attr
-        self.translator=translator
         self.p = 0.5
         self.accuracy = Accuracy()
         self.auroc = AUROC(num_classes=2)
@@ -71,7 +71,7 @@ class EncodedClassifier(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
             self.model.parameters(), 
-            lr=self.hparams.learning_rate, 
+            lr=self.hparams.lr, 
             weight_decay=self.hparams.weight_decay
         )
         total_steps = self.hparams.max_epochs * len(self.trainer._data_connector._train_dataloader_source.dataloader())

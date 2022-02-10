@@ -1,10 +1,13 @@
 from argparse import ArgumentParser
-from src.classifier import Classifier
+from src.models.encodedclassifier import EncodedClassifier
 from src.datamodule import CelebAData
 import pytorch_lightning as pl
 from torchvision import models
 from datetime import datetime
 from pytorch_lightning.loggers import TensorBoardLogger
+from src.utils import parse_config
+from src.datamodule import CelebAEncodedData
+from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 
 def main():
     print("START PROGRAM")
@@ -19,61 +22,33 @@ def main():
     parser.add_argument('--data_dir', type=str, required=False)
     parser.add_argument("--batch_size", type=int, required=False)
     parser.add_argument("--num_workers", type=int, required=False)
+    parser.add_argument("--target_attr", type=int, required=False)
 
     # add all the available trainer options to argparse
     # ie: now --gpus --num_nodes ... --fast_dev_run all work in the cli
     parser = pl.Trainer.add_argparse_args(parser)
 
     # add model specific args
-    parser = Classifier.add_model_specific_args(parser)
+    parser = EncodedClassifier.add_model_specific_args(parser)
+    args = parse_config(parser, 'config.yml', 'classifier')
 
-    args = parser.parse_args()
-
-    ###########################
-    # INITIALIZE DATAMODULE
-    ###########################
-    print("INITIALIZING DATAMODULE...")
-
-
-    dm = CelebAData(args)
-    
-    
-    
-    ###########################
-    # INITIALIZE MODEL
-    ###########################
-    print("INITIALIZING MODEL...")
-    model = models.resnet18(pretrained=args.pretrained_resnet)
-    classifier = Classifier(args, model=model, target_attr=2)
-
-    ###########################
-    # INITIALIZE LOGGER
-    ###########################
-    print("INITIALIZING LOGGER...")
-    logdir = 'logs'
-    logdir += datetime.now().strftime("/%m%d")
-    logdir += '/{}epochs'.format(args.max_epochs)
-    logdir += '/{}'.format(args.optimizer)
-    logger = TensorBoardLogger(logdir, name='')
-
-
+    dm = CelebAEncodedData(args)
+    classifier = EncodedClassifier(hparams=args, target_attr=args.target_attr)
+    logger = TensorBoardLogger('logs/classifier/{}'.format(datetime.now().strftime("/%m%d")), name='')
 
     ###########################
     # TRAIN
     ###########################
     print("START TRAINING...")
+    checkpoint_callback = ModelCheckpoint(monitor="loss/val")
+    lr_monitor = LearningRateMonitor(logging_interval='step')
     trainer = pl.Trainer.from_argparse_args(args,
         logger=logger,
-        fast_dev_run=False,
-        deterministic=True,
-        enable_model_summary=False,
-        log_every_n_steps=1,
+        callbacks = [checkpoint_callback, lr_monitor],  
     )
     
-    trainer.fit(classifier, datamodule=dm
-    )
+    trainer.fit(classifier, datamodule=dm)
     
-    trainer.save_checkpoint(logger.log_dir+logger.name+"/"+logger.name+"celeba_test.ckpt")
 
     ###########################
     # TEST
