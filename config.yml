@@ -4,12 +4,15 @@ common:
   data_dir: "./data_preprocessed/celeba"
   images_dir: "img_align_celeba_64"
   encoded_dir: "./data_encoded"
-  pretrained_autoencoder: "pretrained/autoencoder.ckpt"
-  pretrained_classifier: "pretrained/cls_20.ckpt"
-  id_gen: "pretrained/identity_generator.ckpt"
+  pretrained_dir: "./pretrained"
+  pretrained_ver: "v0"
+  pretrained_autoencoder: "autoencoder.ckpt"
+  id_gen: "identity_generator.ckpt"
   deterministic: True
   precision: 16
   gpus: 2
+  
+
 
 autoencoder:
   max_epochs: 100
@@ -34,15 +37,15 @@ translator:
   lambda_A: 10
   lambda_B: 10
   lambda_idt: 0.5
+  pretrain: 0
 
 classifier:
-  max_epochs: 10
-  batch_size: 2048
-  num_workers: 8
+  max_epochs: 50
+  batch_size: 512
+  num_workers: 4
   lr: 0.001
-  weight_decay: 0.00001
+  weight_decay: 0.0001
   accumulate_grad_batches: 1
-  target_attr: 20
 
 
 fvae:

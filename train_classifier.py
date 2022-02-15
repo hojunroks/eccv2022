@@ -8,6 +8,8 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from src.utils import parse_config
 from src.datamodule import CelebAEncodedData
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
+import pandas as pd
+import os
 
 def main():
     print("START PROGRAM")
@@ -22,7 +24,7 @@ def main():
     parser.add_argument('--data_dir', type=str, required=False)
     parser.add_argument("--batch_size", type=int, required=False)
     parser.add_argument("--num_workers", type=int, required=False)
-    parser.add_argument("--target_attr", type=int, required=False)
+    parser.add_argument("--target_attr", type=str, required=False)
 
     # add all the available trainer options to argparse
     # ie: now --gpus --num_nodes ... --fast_dev_run all work in the cli
@@ -33,8 +35,9 @@ def main():
     args = parse_config(parser, 'config.yml', 'classifier')
 
     dm = CelebAEncodedData(args)
-    classifier = EncodedClassifier(hparams=args, target_attr=args.target_attr)
-    logger = TensorBoardLogger('logs/classifier/{}'.format(datetime.now().strftime("/%m%d")), name='')
+    target_attr_idx = list(pd.read_csv(os.path.join(args.data_dir, 'list_attr_celeba.csv')).keys()).index(args.target_attr)-1
+    classifier = EncodedClassifier(hparams=args, target_attr=target_attr_idx)
+    logger = TensorBoardLogger('logs/classifier/{}'.format(datetime.now().strftime("/%m%d")), name=args.target_attr)
 
     ###########################
     # TRAIN
@@ -44,7 +47,7 @@ def main():
     lr_monitor = LearningRateMonitor(logging_interval='step')
     trainer = pl.Trainer.from_argparse_args(args,
         logger=logger,
-        callbacks = [checkpoint_callback, lr_monitor],  
+        callbacks = [checkpoint_callback, lr_monitor], 
     )
     
     trainer.fit(classifier, datamodule=dm)

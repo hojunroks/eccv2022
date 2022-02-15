@@ -13,14 +13,15 @@ class EncodedClassifierNetwork(nn.Module):
             nn.Linear(1024, 512),
             nn.BatchNorm1d(512),
             nn.ReLU(),
+            nn.Dropout(),
             nn.Linear(512, 256),
             nn.BatchNorm1d(256),
             nn.ReLU(),
-            nn.Linear(256, 256),
-            nn.BatchNorm1d(256),
-            nn.ReLU(),
+            nn.Dropout(),
+            # nn.Linear(256, 256),
+            # nn.BatchNorm1d(256),
+            # nn.ReLU(),
             nn.Linear(256, 2),
-            nn.Softmax()
         )
         
 
@@ -74,10 +75,16 @@ class EncodedClassifier(pl.LightningModule):
             lr=self.hparams.lr, 
             weight_decay=self.hparams.weight_decay
         )
+        # optimizer = torch.optim.SGD(
+        #     self.model.parameters(), 
+        #     lr=self.hparams.lr, 
+        #     momentum=0.9,
+        #     weight_decay=self.hparams.weight_decay
+        # )
         total_steps = self.hparams.max_epochs * len(self.trainer._data_connector._train_dataloader_source.dataloader())
         scheduler = {
             "scheduler": WarmupCosineLR(
-                optimizer, warmup_epochs=total_steps * 0.05, max_epochs=total_steps
+                optimizer, warmup_epochs=total_steps * 0.05, max_epochs=total_steps/self.hparams.gpus
             ),
             "interval": "step",
             "name": "lr",

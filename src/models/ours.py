@@ -40,6 +40,7 @@ class OurGan(pl.LightningModule):
         return nn.L1Loss()(y_hat, y)
 
     def training_step(self, batch, batch_idx, optimizer_idx):
+        self.d_attribute.eval()
         A_imgs, B_imgs, attribute_as, attribute_bs = batch
 
         ################################################
