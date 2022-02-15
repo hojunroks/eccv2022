@@ -2,7 +2,7 @@ common:
   log_every_n_steps: 1
   gradient_clip_val: 0.5
   data_dir: "./data_preprocessed/celeba"
-  images_dir: "img_align_celeba_64"
+  images_dir: "img_align_celeba_128"
   encoded_dir: "./data_encoded"
   pretrained_dir: "./pretrained"
   pretrained_ver: "v0"

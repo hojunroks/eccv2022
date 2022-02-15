@@ -20,16 +20,18 @@ class AutoEncoder(pl.LightningModule):
             EncoderBlock(32, 64),
             EncoderBlock(64, 128),
             EncoderBlock(128, 256),
+            EncoderBlock(256, 512, last_layer=True),
             # nn.Sigmoid()
         )
         self.decoder = nn.Sequential(
+            DecoderBlock(512, 256),
             DecoderBlock(256, 128),
             DecoderBlock(128, 64),
             DecoderBlock(64, 32),
             DecoderBlock(32, 8),
-            DecoderBlock(8, 3)
+            DecoderBlock(8, 3, last_layer=True)
         )
-        self.loss = nn.MSELoss()
+        self.loss = nn.L1Loss()
     
     def forward(self, x):
         x = self.encoder(x)
@@ -100,7 +102,7 @@ class AutoEncoder(pl.LightningModule):
         return parser
 
 class EncoderBlock(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels, out_channels, last_layer=False):
         super().__init__()
         self.c1 = nn.Conv2d(in_channels, out_channels, 3, padding=1)
         self.b1 = nn.BatchNorm2d(out_channels)
@@ -109,6 +111,7 @@ class EncoderBlock(nn.Module):
         self.c3 = nn.Conv2d(out_channels, out_channels, 3, padding=1)
         self.b3 = nn.BatchNorm2d(out_channels)
         self.m = nn.MaxPool2d(2)
+        self.last_layer = last_layer
         
     
     def forward(self, x):
@@ -116,12 +119,15 @@ class EncoderBlock(nn.Module):
         y = x
         x = nn.ReLU()(self.b2(self.c2(x)))
         x = self.b3(self.c3(x))
-        x = nn.ReLU()(y+x)
+        if self.last_layer:
+            x = y+x
+        else:
+            x = nn.ReLU()(y+x)
         return self.m(x)
 
 
 class DecoderBlock(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels, out_channels, last_layer=False):
         super().__init__()
         self.c1 = nn.ConvTranspose2d(in_channels, out_channels, 3, stride=2, padding=1, output_padding=1)
         self.b1 = nn.BatchNorm2d(out_channels)
@@ -129,6 +135,7 @@ class DecoderBlock(nn.Module):
         self.b2 = nn.BatchNorm2d(out_channels)
         self.c3 = nn.ConvTranspose2d(out_channels, out_channels, 3, padding=1)
         self.b3 = nn.BatchNorm2d(out_channels)
+        self.last_layer=last_layer
 
     
     def forward(self, x):
@@ -136,5 +143,8 @@ class DecoderBlock(nn.Module):
         y = x
         x = nn.ReLU()(self.b2(self.c2(x)))
         x = self.b3(self.c3(x))
-        x = nn.ReLU()(y+x)
+        if self.last_layer:
+            x = y+x
+        else:
+            x = nn.ReLU()(y+x)
         return x
