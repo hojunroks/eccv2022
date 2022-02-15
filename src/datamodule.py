@@ -52,9 +52,10 @@ class CelebACycleganData(pl.LightningDataModule):
         self.batch_size = args.batch_size
         self.num_workers = args.num_workers
         self.target_attr = args.target_attr
+        self.encoded_dir = os.path.join(args.encoded_dir, args.pretrained_ver)
     
     def get_dataloader(self, train):
-        dataset = CelebACycleganDataset(root=self.data_dir, train=train, target_attr=self.target_attr)
+        dataset = CelebACycleganDataset(root=self.data_dir, train=train, target_attr=self.target_attr, encoded_dir=self.encoded_dir)
         dataloader = DataLoader(
             dataset,
             batch_size=self.batch_size,
