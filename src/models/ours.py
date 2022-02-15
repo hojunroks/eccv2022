@@ -12,15 +12,18 @@ from src.models.cycleganparts import CycleGanCritic, CycleGanGenerator, CycleGan
 from src.scheduler import WarmupCosineLR
 
 class OurGan(pl.LightningModule):
-    def __init__(self, decoder, hparams, classifier, a2b, b2a, *args, **kwargs):
+    def __init__(self, decoder, hparams, classifier, *args, **kwargs):
         super().__init__()
         self.save_hyperparameters(vars(hparams))
         
 
-        self.A2B = a2b
-        self.B2A = b2a
+        # self.A2B = CycleGanGeneratorFC
+        # self.B2A = CycleGanGeneratorFC
+        self.A2B = CycleGanGenerator
+        self.B2A = CycleGanGenerator
 
-        self.d_valid = CycleGanCriticFC()
+        # self.d_valid = CycleGanCriticFC()
+        self.d_valid = CycleGanCritic()
         self.d_attribute = classifier.eval()
 
         self.fake_A_buffer = ReplayBuffer()
@@ -42,7 +45,9 @@ class OurGan(pl.LightningModule):
     def training_step(self, batch, batch_idx, optimizer_idx):
         self.d_attribute.eval()
         A_imgs, B_imgs, attribute_as, attribute_bs = batch
-
+        A_imgs = nn.Unflatten(1, (512, 4, 4))(A_imgs)
+        B_imgs = nn.Unflatten(1, (512, 4, 4))(B_imgs)
+        
         ################################################
         ##############   Generator Loss  ###############
         ################################################
@@ -75,8 +80,10 @@ class OurGan(pl.LightningModule):
             B_labels = torch.zeros((fake_B.shape[0]), device=self.device).long()
             loss_b_ce = F.cross_entropy(fakeB_labels, B_labels)
 
-
-            generator_loss = loss_identity_B + loss_identity_A + loss_gan + loss_ABA_recon + loss_BAB_recon + loss_a_ce + loss_b_ce
+            if self.hparams.pretrain:
+                generator_loss = loss_identity_B + loss_identity_A + loss_ABA_recon + loss_BAB_recon
+            else:
+                generator_loss = loss_identity_B + loss_identity_A + loss_gan + loss_ABA_recon + loss_BAB_recon + loss_a_ce + loss_b_ce
             tqdm_dict = {
                 "g_loss": generator_loss,
                 "id_b_loss": loss_identity_B,
@@ -122,12 +129,12 @@ class OurGan(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         As, Bs, attribute_as, attribute_bs = batch
-        real_A_imgs = self.decoder(nn.Unflatten(1, (256, 2, 2))(As))
-        fake_B_imgs = self.decoder(nn.Unflatten(1, (256, 2, 2))(self.A2B(As)))
-        reconstructed_A_imgs = self.decoder(nn.Unflatten(1, (256, 2, 2))(self.B2A(self.A2B(As))))
-        real_B_imgs = self.decoder(nn.Unflatten(1, (256, 2, 2))(Bs))
-        fake_A_imgs = self.decoder(nn.Unflatten(1, (256, 2, 2))(self.B2A(Bs)))
-        reconstructed_B_imgs = self.decoder(nn.Unflatten(1, (256, 2, 2))(self.A2B(self.B2A(Bs))))
+        real_A_imgs = self.decoder(nn.Unflatten(1, (512, 4, 4))(As))
+        fake_B_imgs = self.decoder(nn.Unflatten(1, (512, 4, 4))(self.A2B(As)))
+        reconstructed_A_imgs = self.decoder(nn.Unflatten(1, (512, 4, 4))(self.B2A(self.A2B(As))))
+        real_B_imgs = self.decoder(nn.Unflatten(1, (512, 4, 4))(Bs))
+        fake_A_imgs = self.decoder(nn.Unflatten(1, (512, 4, 4))(self.B2A(Bs)))
+        reconstructed_B_imgs = self.decoder(nn.Unflatten(1, (512, 4, 4))(self.A2B(self.B2A(Bs))))
         batch_dictionary={
             "real_As": real_A_imgs,
             "fake_Bs": fake_B_imgs,

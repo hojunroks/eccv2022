@@ -6,39 +6,79 @@ from torch.nn.modules.pooling import MaxPool2d
 class CycleGanCritic(nn.Module):
     def __init__(self):
         super().__init__()
-        self.e1 = EncoderBlock(256, 256)
-        self.e2 = EncoderBlock(256, 256)
-        self.e3 = EncoderBlock(256, 512)
-        self.m = MaxPool2d(2)
-        self.f1 = nn.Linear(512, 1)
+        self.s = nn.Sequential(
+            nn.Conv2d(512, 256, 2),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Conv2d(256, 128, 2),
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Conv2d(128, 64, 2),
+            nn.BatchNorm1d(64),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(64, 1),
+            nn.Sigmoid()
+        )
+        
 
     def forward(self, x):
-        x = self.e1(x)
-        x = self.e2(x)
-        x = self.e3(x)
-        x = self.m(x)
-        x = nn.Flatten()(x)
-        x = nn.Sigmoid()(self.f1(x))
+        x = self.s(x)
         return x
 
 class CycleGanGenerator(nn.Module):
     def __init__(self):
         super().__init__()
-        self.e1 = EncoderBlock(256, 256)
-        self.e2 = EncoderBlock(256, 256)
-        self.e3 = EncoderBlock(256, 512)
+        self.e1 = nn.Sequential(
+            nn.Conv2d(512, 256, 2),
+            nn.BatchNorm1d(256),
+            nn.ReLU()
+        )
+        self.e2 = nn.Sequential(
+            nn.Conv2d(256, 256, 2),
+            nn.BatchNorm1d(256),
+            nn.ReLU()
+        )
+        self.e3 = nn.Sequential(   
+            nn.Conv2d(256, 1024, 2),
+            nn.BatchNorm1d(1024),
+        )
+        self.d1 = nn.Sequential(
+            nn.ConvTranspose2d(1024, 256, 2),
+            nn.BatchNorm1d(256),
+            nn.ReLU()
+        )
+        self.d2 = nn.Sequential(
+            nn.ConvTranspose2d(256, 256, 2),
+            nn.BatchNorm1d(256),
+            nn.ReLU()
+        )
+        self.d3 = nn.Sequential(
+            nn.ConvTranspose2d(256, 512, 2),
+            nn.BatchNorm1d(512),
+        )
         
-        self.d1 = DecoderBlock(512, 256)
-        self.d2 = DecoderBlock(512, 256)
-        self.d3 = DecoderBlock(512, 256)
-
+        self.c1 = nn.Sequential(
+            nn.ConvTranspose2d(512, 256, 1),
+            nn.BatchNorm2d(256),
+            nn.ReLU()
+        )
+        
+        self.c2 = nn.Sequential(
+            nn.ConvTranspose2d(512, 256, 1),
+            nn.BatchNorm2d(256),
+            nn.ReLU()
+        )
+        
     def forward(self, x):
+        o = x
         e1 = self.e1(x)
         e2 = self.e2(e1)
-        x = self.e3(e2)
-        x = self.d1(x)
-        x = self.d2(torch.cat((e2,x), 1))
-        x = self.d3(torch.cat((e1,x), 1))
+        e3 = self.e3(e2)
+        x = self.d1(e3)
+        x = self.d2(self.c1(x+e2))
+        x = self.d3(self.c2(x+e1))
+        x = e1+o
         return x
 
 
@@ -93,7 +133,7 @@ class FCBlock(nn.Module):
 class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
-        self.c1 = nn.Conv2d(in_channels, out_channels, 3)
+        self.c1 = nn.Conv2d(in_channels, out_channels, 2)
         self.b1 = nn.InstanceNorm2d(out_channels)
         self.c2 = nn.Conv2d(out_channels, out_channels, 3, padding=1)
         self.b2 = nn.InstanceNorm2d(out_channels)

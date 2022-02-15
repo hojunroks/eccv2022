@@ -10,6 +10,11 @@ class EncodedClassifierNetwork(nn.Module):
     def __init__(self):
         super().__init__()
         self.s = nn.Sequential(
+            nn.Conv2d(512, 256, 3),
+            nn.BatchNorm2d(256),
+            nn.ReLU(),
+            nn.Dropout(),
+            nn.Flatten(),
             nn.Linear(1024, 512),
             nn.BatchNorm1d(512),
             nn.ReLU(),
@@ -18,9 +23,6 @@ class EncodedClassifierNetwork(nn.Module):
             nn.BatchNorm1d(256),
             nn.ReLU(),
             nn.Dropout(),
-            # nn.Linear(256, 256),
-            # nn.BatchNorm1d(256),
-            # nn.ReLU(),
             nn.Linear(256, 2),
         )
         
@@ -44,6 +46,7 @@ class EncodedClassifier(pl.LightningModule):
         self.auroc = AUROC(num_classes=2)
 
     def forward(self, x):
+        x = nn.Unflatten(1, (512, 4, 4))(x)
         x = self.model(x)
         return x
 

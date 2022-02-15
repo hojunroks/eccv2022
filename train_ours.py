@@ -40,10 +40,9 @@ def main():
     dm = CelebACycleganData(args)    
     autoencoder = AutoEncoder.load_from_checkpoint(hparams=args, checkpoint_path=os.path.join(args.pretrained_dir, args.pretrained_ver, args.pretrained_autoencoder))
     decoder = autoencoder.decoder.eval()
-    translator = CycleGan.load_from_checkpoint(hparams=args, decoder=decoder, checkpoint_path = os.path.join(args.pretrained_dir, args.pretrained_ver, args.id_gen))
     classifier = EncodedClassifier.load_from_checkpoint(hparams=args, checkpoint_path=os.path.join(args.pretrained_dir, args.pretrained_ver, args.target_attr+".ckpt"))
-    ours = OurGan(hparams=args, decoder=decoder, classifier=classifier, a2b= translator.A2B, b2a= translator.B2A)
-    # translator = CycleGan(hparams=args, decoder=decoder)
+
+    ours = OurGan(hparams=args, decoder=decoder, classifier=classifier)
     logger = TensorBoardLogger('logs/ourgan/{}'.format(datetime.now().strftime("/%m%d")), name='')
 
     ###########################
