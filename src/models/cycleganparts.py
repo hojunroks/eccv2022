@@ -59,13 +59,13 @@ class CycleGanGenerator(nn.Module):
         )
         
         self.c1 = nn.Sequential(
-            nn.ConvTranspose2d(512, 256, 1),
+            nn.Conv2d(512, 256, 1),
             nn.BatchNorm2d(256),
             nn.ReLU()
         )
         
         self.c2 = nn.Sequential(
-            nn.ConvTranspose2d(512, 256, 1),
+            nn.Conv2d(512, 256, 1),
             nn.BatchNorm2d(256),
             nn.ReLU()
         )
@@ -76,8 +76,8 @@ class CycleGanGenerator(nn.Module):
         e2 = self.e2(e1)
         e3 = self.e3(e2)
         x = self.d1(e3)
-        x = self.d2(self.c1(x+e2))
-        x = self.d3(self.c2(x+e1))
+        x = self.d2(self.c1(torch.cat((x,e2), dim=1)))
+        x = self.d3(self.c2(torch.cat((x,e1), dim=1)))
         x = e1+o
         return x
 
