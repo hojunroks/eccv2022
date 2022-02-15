@@ -73,10 +73,10 @@ class OurGan(pl.LightningModule):
             loss_BAB_recon = self.cycle_loss(recon_B, B_imgs)*self.hparams.lambda_B
 
             # Classification Loss
-            fakeA_labels = self.d_attribute(fake_A.flatten(), start_dim=1)
+            fakeA_labels = self.d_attribute(torch.flatten(fake_A, start_dim=1))
             A_labels = torch.ones((fake_A.shape[0]), device=self.device).long()
             loss_a_ce = F.cross_entropy(fakeA_labels, A_labels)
-            fakeB_labels = self.d_attribute(fake_B.flatten(), start_dim=1)
+            fakeB_labels = self.d_attribute(torch.flatten(fake_B, start_dim=1))
             B_labels = torch.zeros((fake_B.shape[0]), device=self.device).long()
             loss_b_ce = F.cross_entropy(fakeB_labels, B_labels)
 
