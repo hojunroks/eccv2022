@@ -25,11 +25,11 @@ def main():
     attributes_csv='list_attr_celeba.csv'
     attributes = pd.read_csv(os.path.join(args.data_dir, attributes_csv))
     images_dir = os.path.join(args.data_dir, args.images_dir)
-    encoded_dir = args.encoded_dir
+    encoded_dir = os.path.join(args.encoded_dir, args.pretrained_ver)
 
     
     print("LOADING PRETRAINED MODEL...")
-    autoencoder = AutoEncoder.load_from_checkpoint(hparams=args, checkpoint_path=args.pretrained_autoencoder).to('cuda:0')
+    autoencoder = AutoEncoder.load_from_checkpoint(hparams=args, checkpoint_path=os.path.join(args.pretrained_dir, args.pretrained_ver, args.pretrained_autoencoder)).to('cuda:0')
     encoder = autoencoder.encoder.eval()
 
     ###########################

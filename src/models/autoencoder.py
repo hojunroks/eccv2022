@@ -15,21 +15,18 @@ class AutoEncoder(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters(vars(hparams))
         self.encoder = nn.Sequential(
-            EncoderBlock(3, 8),
-            EncoderBlock(8, 32),
-            EncoderBlock(32, 64),
+            EncoderBlock(3, 16),
+            EncoderBlock(16, 64),
             EncoderBlock(64, 128),
             EncoderBlock(128, 256),
             EncoderBlock(256, 512, last_layer=True),
-            # nn.Sigmoid()
         )
         self.decoder = nn.Sequential(
             DecoderBlock(512, 256),
             DecoderBlock(256, 128),
             DecoderBlock(128, 64),
-            DecoderBlock(64, 32),
-            DecoderBlock(32, 8),
-            DecoderBlock(8, 3, last_layer=True)
+            DecoderBlock(64, 16),
+            DecoderBlock(16 , 3, last_layer=True)
         )
         self.loss = nn.L1Loss()
     
@@ -87,14 +84,14 @@ class AutoEncoder(pl.LightningModule):
         total_steps = self.hparams.max_epochs * len(self.trainer._data_connector._train_dataloader_source.dataloader())
         scheduler = {
             "scheduler": WarmupCosineLR(
-                optimizer, warmup_epochs=total_steps * 0.1, max_epochs=total_steps
+                optimizer, warmup_epochs=total_steps * 0.1, max_epochs=total_steps/self.hparams.gpus
             ),
             "interval": "step",
             "name": "lr",
         }
         return [optimizer], [scheduler]
 
-    @staticmethod
+    @staticmethod 
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--lr", type=float, required=False)
