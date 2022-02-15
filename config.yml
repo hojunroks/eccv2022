@@ -9,6 +9,7 @@ common:
   pretrained_autoencoder: "autoencoder.ckpt"
   id_gen: "identity_generator.ckpt"
   deterministic: True
+  target_attr: Male
   precision: 16
   gpus: 2
   
@@ -27,8 +28,8 @@ translator:
   max_epochs: 100
   batch_size: 4
   num_workers: 2
-  lr_g: 0.0001
-  lr_d: 0.0001
+  lr_g: 0.001
+  lr_d: 0.00002
   target_attr: Male
   b1: 0.5
   b2: 0.999
