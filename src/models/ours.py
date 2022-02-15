@@ -129,12 +129,14 @@ class OurGan(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         As, Bs, attribute_as, attribute_bs = batch
-        real_A_imgs = self.decoder(nn.Unflatten(1, (512, 4, 4))(As))
-        fake_B_imgs = self.decoder(nn.Unflatten(1, (512, 4, 4))(self.A2B(As)))
-        reconstructed_A_imgs = self.decoder(nn.Unflatten(1, (512, 4, 4))(self.B2A(self.A2B(As))))
-        real_B_imgs = self.decoder(nn.Unflatten(1, (512, 4, 4))(Bs))
-        fake_A_imgs = self.decoder(nn.Unflatten(1, (512, 4, 4))(self.B2A(Bs)))
-        reconstructed_B_imgs = self.decoder(nn.Unflatten(1, (512, 4, 4))(self.A2B(self.B2A(Bs))))
+        As = nn.Unflatten(1, (512, 4, 4))(As)
+        Bs = nn.Unflatten(1, (512, 4, 4))(Bs)
+        real_A_imgs = self.decoder(As)
+        fake_B_imgs = self.decoder(self.A2B(As))
+        reconstructed_A_imgs = self.decoder(self.B2A(self.A2B(As)))
+        real_B_imgs = self.decoder(Bs)
+        fake_A_imgs = self.decoder(self.B2A(Bs))
+        reconstructed_B_imgs = self.decoder(self.A2B(self.B2A(Bs)))
         batch_dictionary={
             "real_As": real_A_imgs,
             "fake_Bs": fake_B_imgs,
