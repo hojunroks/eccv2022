@@ -34,7 +34,6 @@ def main():
     parser = EncodedClassifier.add_model_specific_args(parser)
     args = parse_config(parser, 'config.yml', 'classifier')
 
-    args.encoded_dir = os.path.join(args.encoded_dir, args.pretrained_ver)
     dm = CelebAEncodedData(args)
     target_attr_idx = list(pd.read_csv(os.path.join(args.data_dir, 'list_attr_celeba.csv')).keys()).index(args.target_attr)-1
     classifier = EncodedClassifier(hparams=args, target_attr=target_attr_idx)

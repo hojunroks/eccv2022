@@ -101,9 +101,10 @@ class CelebAEncodedData(pl.LightningDataModule):
         self.data_dir = args.data_dir
         self.batch_size = args.batch_size
         self.num_workers = args.num_workers
+        self.encoded_dir = os.path.join(args.encoded_dir, args.pretrained_ver)
     
     def get_dataloader(self, train):
-        dataset = CelebAEncodedDataset(root=self.data_dir, train=train)
+        dataset = CelebAEncodedDataset(root=self.data_dir, train=train, encoded_dir=self.encoded_dir)
         dataloader = DataLoader(
             dataset,
             batch_size=self.batch_size,
