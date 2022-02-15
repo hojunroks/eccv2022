@@ -8,13 +8,13 @@ class CycleGanCritic(nn.Module):
         super().__init__()
         self.s = nn.Sequential(
             nn.Conv2d(512, 256, 2),
-            nn.BatchNorm1d(256),
+            nn.BatchNorm2d(256),
             nn.ReLU(),
             nn.Conv2d(256, 128, 2),
-            nn.BatchNorm1d(128),
+            nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.Conv2d(128, 64, 2),
-            nn.BatchNorm1d(64),
+            nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.Flatten(),
             nn.Linear(64, 1),
@@ -31,31 +31,31 @@ class CycleGanGenerator(nn.Module):
         super().__init__()
         self.e1 = nn.Sequential(
             nn.Conv2d(512, 256, 2),
-            nn.BatchNorm1d(256),
+            nn.BatchNorm2d(256),
             nn.ReLU()
         )
         self.e2 = nn.Sequential(
             nn.Conv2d(256, 256, 2),
-            nn.BatchNorm1d(256),
+            nn.BatchNorm2d(256),
             nn.ReLU()
         )
         self.e3 = nn.Sequential(   
             nn.Conv2d(256, 1024, 2),
-            nn.BatchNorm1d(1024),
+            nn.BatchNorm2d(1024),
         )
         self.d1 = nn.Sequential(
             nn.ConvTranspose2d(1024, 256, 2),
-            nn.BatchNorm1d(256),
+            nn.BatchNorm2d(256),
             nn.ReLU()
         )
         self.d2 = nn.Sequential(
             nn.ConvTranspose2d(256, 256, 2),
-            nn.BatchNorm1d(256),
+            nn.BatchNorm2d(256),
             nn.ReLU()
         )
         self.d3 = nn.Sequential(
             nn.ConvTranspose2d(256, 512, 2),
-            nn.BatchNorm1d(512),
+            nn.BatchNorm2d(512),
         )
         
         self.c1 = nn.Sequential(
