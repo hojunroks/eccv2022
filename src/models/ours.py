@@ -47,7 +47,7 @@ class OurGan(pl.LightningModule):
         A_imgs, B_imgs, attribute_as, attribute_bs = batch
         A_imgs = nn.Unflatten(1, (512, 4, 4))(A_imgs)
         B_imgs = nn.Unflatten(1, (512, 4, 4))(B_imgs)
-        
+
         ################################################
         ##############   Generator Loss  ###############
         ################################################
@@ -212,7 +212,7 @@ class OurGan(pl.LightningModule):
         parser.add_argument("--lambda_A", type=float, required=False)
         parser.add_argument("--lambda_B", type=float, required=False)
         parser.add_argument("--lambda_idt", type=float, required=False)
-        
+        parser.add_argument("--pretrain", type=int, required=False)
         return parser
 
 
