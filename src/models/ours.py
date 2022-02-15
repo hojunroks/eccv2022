@@ -19,8 +19,8 @@ class OurGan(pl.LightningModule):
 
         # self.A2B = CycleGanGeneratorFC
         # self.B2A = CycleGanGeneratorFC
-        self.A2B = CycleGanGenerator
-        self.B2A = CycleGanGenerator
+        self.A2B = CycleGanGenerator()
+        self.B2A = CycleGanGenerator()
 
         # self.d_valid = CycleGanCriticFC()
         self.d_valid = CycleGanCritic()
