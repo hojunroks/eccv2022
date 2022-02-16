@@ -31,42 +31,42 @@ class CycleGanGenerator(nn.Module):
         super().__init__()
         self.e1 = nn.Sequential(
             nn.Conv2d(512, 256, 2),
-            nn.InstanceNorm2d(256),
+            nn.BatchNorm2d(256),
             nn.ReLU()
         )
         self.e2 = nn.Sequential(
             nn.Conv2d(256, 256, 2),
-            nn.InstanceNorm2d(256),
+            nn.BatchNorm2d(256),
             nn.ReLU()
         )
         self.e3 = nn.Sequential(   
             nn.Conv2d(256, 1024, 2),
-            nn.ReLU()
+            nn.BatchNorm2d(1024),
         )
         self.d1 = nn.Sequential(
             nn.ConvTranspose2d(1024, 256, 2),
-            nn.InstanceNorm2d(256),
+            nn.BatchNorm2d(256),
             nn.ReLU()
         )
         self.d2 = nn.Sequential(
             nn.ConvTranspose2d(256, 256, 2),
-            nn.InstanceNorm2d(256),
+            nn.BatchNorm2d(256),
             nn.ReLU()
         )
         self.d3 = nn.Sequential(
             nn.ConvTranspose2d(256, 512, 2),
-            nn.InstanceNorm2d(512),
+            nn.BatchNorm2d(512),
         )
         
         self.c1 = nn.Sequential(
             nn.Conv2d(512, 256, 1),
-            nn.InstanceNorm2d(256),
+            nn.BatchNorm2d(256),
             nn.ReLU()
         )
         
         self.c2 = nn.Sequential(
             nn.Conv2d(512, 256, 1),
-            nn.InstanceNorm2d(256),
+            nn.BatchNorm2d(256),
             nn.ReLU()
         )
         self.c3 = nn.Sequential(
