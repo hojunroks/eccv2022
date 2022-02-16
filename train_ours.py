@@ -22,6 +22,7 @@ def main():
     parser.add_argument('--data_dir', type=str, required=False)
     parser.add_argument('--pretrained_dir', type=str, required=False)
     parser.add_argument('--pretrained_ver', type=str, required=False)
+    parser.add_argument('--use_pretrain', type=int, required=False)
     parser.add_argument("--batch_size", type=int, required=False)
     parser.add_argument("--num_workers", type=int, required=False)
     parser.add_argument("--target_attr", type=str, required=False)
@@ -41,8 +42,11 @@ def main():
     autoencoder = AutoEncoder.load_from_checkpoint(hparams=args, checkpoint_path=os.path.join(args.pretrained_dir, args.pretrained_ver, args.pretrained_autoencoder))
     decoder = autoencoder.decoder.eval()
     classifier = EncodedClassifier.load_from_checkpoint(hparams=args, checkpoint_path=os.path.join(args.pretrained_dir, args.pretrained_ver, args.target_attr+".ckpt"))
-
-    ours = OurGan(hparams=args, decoder=decoder, classifier=classifier)
+    
+    if args.use_pretrain:
+        ours = OurGan.load_from_checkpoint(hparams=args, decoder=decoder, classifier=classifier, checkpoint_path=os.path.join(args.pretrained_dir, args.pretrained_ver, args.id_gen))
+    else:
+        ours = OurGan(hparams=args, decoder=decoder, classifier=classifier)
     logger = TensorBoardLogger('logs/ourgan/{}'.format(datetime.now().strftime("/%m%d")), name='')
 
     ###########################
