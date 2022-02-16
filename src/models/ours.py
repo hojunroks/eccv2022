@@ -64,7 +64,7 @@ class OurGan(pl.LightningModule):
             fake_imgs = torch.cat((fake_A, fake_B), dim=0)
             critic_fake = self.d_valid(fake_imgs)
             real_labels = torch.ones(critic_fake.shape, device=self.device)
-            loss_gan = self.gan_loss(critic_fake, real_labels)
+            loss_gan = self.gan_loss(critic_fake, real_labels)*self.hparams.lambda_gan
 
             # Cycle Loss
             recon_A = self.B2A(fake_B)
@@ -226,6 +226,7 @@ class OurGan(pl.LightningModule):
         parser.add_argument("--lambda_B", type=float, required=False)
         parser.add_argument("--lambda_idt", type=float, required=False)
         parser.add_argument("--lambda_ce", type=float, required=False)
+        parser.add_argument("--lambda_gan", type=float, required=False)
         parser.add_argument("--pretrain", type=int, required=False)
         return parser
 

@@ -37,7 +37,8 @@ translator:
   lambda_A: 1
   lambda_B: 1
   lambda_idt: 0.5
-  lambda_ce: 10
+  lambda_ce: 3
+  lambda_gan: 10
   pretrain: 0
 
 classifier:
