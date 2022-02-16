@@ -5,7 +5,7 @@ common:
   images_dir: "img_align_celeba_128"
   encoded_dir: "data_encoded"
   pretrained_dir: "pretrained"
-  pretrained_ver: "v1"
+  pretrained_ver: "v2"
   pretrained_autoencoder: "autoencoder.ckpt"
   id_gen: "identity_generator.ckpt"
   deterministic: True

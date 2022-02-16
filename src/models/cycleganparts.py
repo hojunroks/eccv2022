@@ -69,9 +69,6 @@ class CycleGanGenerator(nn.Module):
             nn.BatchNorm2d(256),
             nn.ReLU()
         )
-        self.c3 = nn.Sequential(
-            nn.Conv2d(1024, 512, 1),
-        )
         
     def forward(self, x):
         o = x
@@ -81,7 +78,7 @@ class CycleGanGenerator(nn.Module):
         x = self.d1(e3)
         x = self.d2(self.c1(torch.cat((x,e2), dim=1)))
         x = self.d3(self.c2(torch.cat((x,e1), dim=1)))
-        x = self.c3(torch.cat((x,o), dim=1))
+        x = x+o
         return x
 
 
