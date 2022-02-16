@@ -75,9 +75,11 @@ class OurGan(pl.LightningModule):
             # Classification Loss
             fakeA_labels = self.d_attribute(torch.flatten(fake_A, start_dim=1))
             A_labels = torch.ones((fake_A.shape[0]), device=self.device).long()
+            print(fakeA_labels)
             loss_a_ce = F.cross_entropy(fakeA_labels, A_labels)
             fakeB_labels = self.d_attribute(torch.flatten(fake_B, start_dim=1))
             B_labels = torch.zeros((fake_B.shape[0]), device=self.device).long()
+            print(fakeB_labels)
             loss_b_ce = F.cross_entropy(fakeB_labels, B_labels)
 
             if self.hparams.pretrain:
@@ -120,7 +122,9 @@ class OurGan(pl.LightningModule):
             loss_d_valid_fake = self.gan_loss(pred_fake, fake_labels)
             loss_d_valid = loss_d_valid_real + loss_d_valid_fake
             tqdm_dict = {
-                "d_valid_loss": loss_d_valid
+                "d_valid_loss": loss_d_valid,
+                "d_valid_loss+fake": loss_d_valid_fake,
+                "d_valid_loss_real": loss_d_valid_real
             }
             for key in tqdm_dict.keys():
                 self.log(key, tqdm_dict[key])
