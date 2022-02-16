@@ -41,7 +41,7 @@ class CycleGanGenerator(nn.Module):
         )
         self.e3 = nn.Sequential(   
             nn.Conv2d(256, 1024, 2),
-            nn.InstanceNorm2d(1024),
+            nn.ReLU()
         )
         self.d1 = nn.Sequential(
             nn.ConvTranspose2d(1024, 256, 2),
