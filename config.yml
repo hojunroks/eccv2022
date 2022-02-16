@@ -34,9 +34,10 @@ translator:
   b1: 0.5
   b2: 0.999
   accumulate_grad_batches: 1
-  lambda_A: 10
-  lambda_B: 10
+  lambda_A: 1
+  lambda_B: 1
   lambda_idt: 0.5
+  lambda_ce: 10
   pretrain: 0
 
 classifier:

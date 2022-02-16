@@ -76,11 +76,11 @@ class OurGan(pl.LightningModule):
             fakeA_labels = self.d_attribute(torch.flatten(fake_A, start_dim=1))
             A_labels = torch.ones((fake_A.shape[0]), device=self.device).long()
             print(fakeA_labels)
-            loss_a_ce = F.cross_entropy(fakeA_labels, A_labels)
+            loss_a_ce = F.cross_entropy(fakeA_labels, A_labels)*self.hparams.lambda_ce
             fakeB_labels = self.d_attribute(torch.flatten(fake_B, start_dim=1))
             B_labels = torch.zeros((fake_B.shape[0]), device=self.device).long()
             print(fakeB_labels)
-            loss_b_ce = F.cross_entropy(fakeB_labels, B_labels)
+            loss_b_ce = F.cross_entropy(fakeB_labels, B_labels)*self.hparams.lambda_ce
 
             if self.hparams.pretrain:
                 generator_loss = loss_identity_B + loss_identity_A + loss_ABA_recon + loss_BAB_recon
@@ -218,6 +218,7 @@ class OurGan(pl.LightningModule):
         parser.add_argument("--lambda_A", type=float, required=False)
         parser.add_argument("--lambda_B", type=float, required=False)
         parser.add_argument("--lambda_idt", type=float, required=False)
+        parser.add_argument("--lambda_ce", type=float, required=False)
         parser.add_argument("--pretrain", type=int, required=False)
         return parser
 
