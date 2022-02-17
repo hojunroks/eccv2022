@@ -7,17 +7,19 @@ class CycleGanCritic(nn.Module):
     def __init__(self):
         super().__init__()
         self.s = nn.Sequential(
-            nn.Conv2d(512, 256, 2),
-            nn.BatchNorm2d(256),
+            nn.Conv2d(512, 512, 2),
+            nn.BatchNorm2d(512),
             nn.ReLU(),
-            nn.Conv2d(256, 128, 2),
-            nn.BatchNorm2d(128),
+            nn.Conv2d(512, 512, 2),
+            nn.BatchNorm2d(512),
             nn.ReLU(),
-            nn.Conv2d(128, 64, 2),
-            nn.BatchNorm2d(64),
+            nn.Conv2d(512, 1024, 2),
+            nn.BatchNorm2d(1024),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(64, 1),
+            nn.Linear(1024, 128),
+            nn.ReLU(),
+            nn.Linear(128, 1),
             nn.Sigmoid()
         )
         
@@ -30,43 +32,43 @@ class CycleGanGenerator(nn.Module):
     def __init__(self):
         super().__init__()
         self.e1 = nn.Sequential(
-            nn.Conv2d(512, 256, 2),
-            nn.BatchNorm2d(256),
+            nn.Conv2d(512, 512, 2),
+            nn.BatchNorm2d(512),
             nn.ReLU()
         )
         self.e2 = nn.Sequential(
-            nn.Conv2d(256, 256, 2),
-            nn.BatchNorm2d(256),
+            nn.Conv2d(512, 512, 2),
+            nn.BatchNorm2d(512),
             nn.ReLU()
         )
         self.e3 = nn.Sequential(   
-            nn.Conv2d(256, 1024, 2),
+            nn.Conv2d(512, 1024, 2),
             nn.BatchNorm2d(1024),
         )
         self.d1 = nn.Sequential(
-            nn.ConvTranspose2d(1024, 256, 2),
-            nn.BatchNorm2d(256),
+            nn.ConvTranspose2d(1024, 512, 2),
+            nn.BatchNorm2d(512),
             nn.ReLU()
         )
         self.d2 = nn.Sequential(
-            nn.ConvTranspose2d(256, 256, 2),
-            nn.BatchNorm2d(256),
+            nn.ConvTranspose2d(512, 512, 2),
+            nn.BatchNorm2d(512),
             nn.ReLU()
         )
         self.d3 = nn.Sequential(
-            nn.ConvTranspose2d(256, 512, 2),
+            nn.ConvTranspose2d(512, 512, 2),
             nn.BatchNorm2d(512),
         )
         
         self.c1 = nn.Sequential(
-            nn.Conv2d(512, 256, 1),
-            nn.BatchNorm2d(256),
+            nn.Conv2d(1024, 512, 1),
+            nn.BatchNorm2d(512),
             nn.ReLU()
         )
         
         self.c2 = nn.Sequential(
-            nn.Conv2d(512, 256, 1),
-            nn.BatchNorm2d(256),
+            nn.Conv2d(1024, 512, 1),
+            nn.BatchNorm2d(512),
             nn.ReLU()
         )
         
