@@ -11,6 +11,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from src.utils import parse_config
 import sys
 import os
+ATTRIBUTE_KEYS = ['5_o_Clock_Shadow', 'Arched_Eyebrows', 'Attractive', 'Bags_Under_Eyes', 'Bald', 'Bangs', 'Big_Lips', 'Big_Nose', 'Black_Hair', 'Blond_Hair', 'Blurry', 'Brown_Hair', 'Bushy_Eyebrows', 'Chubby', 'Double_Chin', 'Eyeglasses', 'Goatee', 'Gray_Hair', 'Heavy_Makeup', 'High_Cheekbones', 'Male', 'Mouth_Slightly_Open', 'Mustache', 'Narrow_Eyes', 'No_Beard', 'Oval_Face', 'Pale_Skin', 'Pointy_Nose', 'Receding_Hairline', 'Rosy_Cheeks', 'Sideburns', 'Smiling', 'Straight_Hair', 'Wavy_Hair', 'Wearing_Earrings', 'Wearing_Hat', 'Wearing_Lipstick', 'Wearing_Necklace', 'Wearing_Necktie', 'Young']
 
 def main():
     #######################
@@ -42,11 +43,16 @@ def main():
     autoencoder = AutoEncoder.load_from_checkpoint(hparams=args, checkpoint_path=os.path.join(args.pretrained_dir, args.pretrained_ver, args.pretrained_autoencoder))
     decoder = autoencoder.decoder.eval()
     classifier = EncodedClassifier.load_from_checkpoint(hparams=args, checkpoint_path=os.path.join(args.pretrained_dir, args.pretrained_ver, args.target_attr+".ckpt"))
+    classifiers = {}
+    for cls in args.classifiers.split():
+        print(cls)
+        idx = ATTRIBUTE_KEYS.index(cls)
+        classifiers[idx] = EncodedClassifier.load_from_checkpoint(hparams=args, checkpoint_path=os.path.join(args.pretrained_dir, args.pretrained_ver, cls+".ckpt"))
     
     if args.use_pretrain:
-        ours = OurGan.load_from_checkpoint(hparams=args, decoder=decoder, classifier=classifier, checkpoint_path=os.path.join(args.pretrained_dir, args.pretrained_ver, args.id_gen))
+        ours = OurGan.load_from_checkpoint(hparams=args, decoder=decoder, classifier=classifier, classifiers=classifiers, checkpoint_path=os.path.join(args.pretrained_dir, args.pretrained_ver, args.id_gen))
     else:
-        ours = OurGan(hparams=args, decoder=decoder, classifier=classifier)
+        ours = OurGan(hparams=args, decoder=decoder, classifier=classifier, classifiers=classifiers)
     logger = TensorBoardLogger('logs/ourgan/{}'.format(datetime.now().strftime("/%m%d")), name='')
 
     ###########################

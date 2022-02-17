@@ -10,6 +10,7 @@ common:
   id_gen: "identity_generator.ckpt"
   deterministic: True
   target_attr: Male
+  classifiers: Male Mouth_Slightly_Open Smiling Wearing_Lipstick Eyeglasses
   precision: 16
   gpus: 2
   
@@ -28,8 +29,8 @@ translator:
   max_epochs: 100
   batch_size: 4
   num_workers: 2
-  lr_g: 0.001
-  lr_d: 0.00002
+  lr_g: 0.0002
+  lr_d: 0.0002
   target_attr: Male
   b1: 0.5
   b2: 0.999
@@ -37,7 +38,7 @@ translator:
   lambda_A: 1
   lambda_B: 1
   lambda_idt: 0.5
-  lambda_ce: 3
+  lambda_ce: 1000
   lambda_gan: 10
   pretrain: 0
   use_pretrain: 0

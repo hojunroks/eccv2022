@@ -10,9 +10,13 @@ import torch.nn.functional as F
 from torchvision.utils import make_grid
 from src.models.cycleganparts import CycleGanCritic, CycleGanGenerator, CycleGanCriticFC, CycleGanGeneratorFC
 from src.scheduler import WarmupCosineLR
+from torchmetrics import Accuracy, AUROC
+
+ATTRIBUTE_KEYS = ['5_o_Clock_Shadow', 'Arched_Eyebrows', 'Attractive', 'Bags_Under_Eyes', 'Bald', 'Bangs', 'Big_Lips', 'Big_Nose', 'Black_Hair', 'Blond_Hair', 'Blurry', 'Brown_Hair', 'Bushy_Eyebrows', 'Chubby', 'Double_Chin', 'Eyeglasses', 'Goatee', 'Gray_Hair', 'Heavy_Makeup', 'High_Cheekbones', 'Male', 'Mouth_Slightly_Open', 'Mustache', 'Narrow_Eyes', 'No_Beard', 'Oval_Face', 'Pale_Skin', 'Pointy_Nose', 'Receding_Hairline', 'Rosy_Cheeks', 'Sideburns', 'Smiling', 'Straight_Hair', 'Wavy_Hair', 'Wearing_Earrings', 'Wearing_Hat', 'Wearing_Lipstick', 'Wearing_Necklace', 'Wearing_Necktie', 'Young']
+
 
 class OurGan(pl.LightningModule):
-    def __init__(self, decoder, hparams, classifier, *args, **kwargs):
+    def __init__(self, decoder, hparams, classifier, classifiers, *args, **kwargs):
         super().__init__()
         self.save_hyperparameters(vars(hparams))
         
@@ -26,10 +30,16 @@ class OurGan(pl.LightningModule):
         self.d_valid = CycleGanCritic()
         self.d_attribute = classifier.eval()
 
+        self.classifiers = classifiers
+
         self.fake_A_buffer = ReplayBuffer()
         self.fake_B_buffer = ReplayBuffer()
 
         self.decoder = decoder
+
+        self.accuracy = Accuracy()
+        self.auroc = AUROC(num_classes=2)
+
 
     
 
@@ -73,12 +83,21 @@ class OurGan(pl.LightningModule):
             loss_BAB_recon = self.cycle_loss(recon_B, B_imgs)*self.hparams.lambda_B
 
             # Classification Loss
-            fakeA_labels = self.d_attribute(torch.flatten(fake_A, start_dim=1))
-            A_labels = torch.ones((fake_A.shape[0]), device=self.device).long()
-            loss_a_ce = F.cross_entropy(fakeA_labels, A_labels)*self.hparams.lambda_ce
-            fakeB_labels = self.d_attribute(torch.flatten(fake_B, start_dim=1))
-            B_labels = torch.zeros((fake_B.shape[0]), device=self.device).long()
-            loss_b_ce = F.cross_entropy(fakeB_labels, B_labels)*self.hparams.lambda_ce
+            if self.hparams.pretrain:
+                with torch.no_grad():
+                    fakeA_labels = self.d_attribute(torch.flatten(fake_A, start_dim=1))
+                    A_labels = torch.ones((fake_A.shape[0]), device=self.device).long()
+                    loss_a_ce = F.cross_entropy(fakeA_labels, A_labels)*self.hparams.lambda_ce
+                    fakeB_labels = self.d_attribute(torch.flatten(fake_B, start_dim=1))
+                    B_labels = torch.zeros((fake_B.shape[0]), device=self.device).long()
+                    loss_b_ce = F.cross_entropy(fakeB_labels, B_labels)*self.hparams.lambda_ce
+            else:
+                fakeA_labels = self.d_attribute(torch.flatten(fake_A, start_dim=1))
+                A_labels = torch.ones((fake_A.shape[0]), device=self.device).long()
+                loss_a_ce = F.cross_entropy(fakeA_labels, A_labels)*self.hparams.lambda_ce
+                fakeB_labels = self.d_attribute(torch.flatten(fake_B, start_dim=1))
+                B_labels = torch.zeros((fake_B.shape[0]), device=self.device).long()
+                loss_b_ce = F.cross_entropy(fakeB_labels, B_labels)*self.hparams.lambda_ce
 
             if self.hparams.pretrain:
                 generator_loss = loss_identity_B + loss_identity_A + loss_ABA_recon + loss_BAB_recon
@@ -133,6 +152,26 @@ class OurGan(pl.LightningModule):
         As, Bs, attribute_as, attribute_bs = batch
         As = nn.Unflatten(1, (512, 4, 4))(As)
         Bs = nn.Unflatten(1, (512, 4, 4))(Bs)
+        trues = torch.cat((As,Bs))
+        gt = torch.cat((attribute_as, attribute_bs))
+        fake_As = self.B2A(Bs)
+        fake_Bs = self.A2B(As)
+        fakes = torch.cat((fake_Bs, fake_As))
+        for cls in self.classifiers.keys():
+            self.classifiers[cls].to(self.device)
+            gt_labels = ((gt[:, cls]+1)/2).long()
+            true_preds = self.classifiers[cls](torch.flatten(trues, start_dim=1))
+            fake_preds = self.classifiers[cls](torch.flatten(fakes, start_dim=1))
+            accuracy_true = self.accuracy(true_preds, gt_labels)
+            auroc_true = self.accuracy(true_preds, gt_labels)
+            accuracy_fake = self.accuracy(fake_preds, gt_labels)
+            auroc_fake = self.accuracy(fake_preds, gt_labels)
+            self.log(ATTRIBUTE_KEYS[cls]+'/accuracy/true', accuracy_true)
+            self.log(ATTRIBUTE_KEYS[cls]+'/accuracy/fake', accuracy_fake)
+            self.log(ATTRIBUTE_KEYS[cls]+'/auroc/true', auroc_true)
+            self.log(ATTRIBUTE_KEYS[cls]+'/auroc/fake', auroc_fake)
+                
+            
         real_A_imgs = self.decoder(As)
         fake_B_imgs = self.decoder(self.A2B(As))
         reconstructed_A_imgs = self.decoder(self.B2A(self.A2B(As)))
@@ -219,6 +258,7 @@ class OurGan(pl.LightningModule):
         parser.add_argument("--lambda_ce", type=float, required=False)
         parser.add_argument("--lambda_gan", type=float, required=False)
         parser.add_argument("--pretrain", type=int, required=False)
+        parser.add_argument("--classifiers", type=list, required=False)
         return parser
 
 

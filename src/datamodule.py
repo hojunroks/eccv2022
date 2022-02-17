@@ -1,4 +1,5 @@
 import random
+from attr import attributes
 import pytorch_lightning as pl
 import pandas as pd
 import torch
@@ -41,7 +42,10 @@ class CelebACycleganDataset(Dataset):
 
         encoded_b = torch.from_numpy(np.load(os.path.join(self.encoded_dir, self.b_attributes.iloc[idx_b, 1]).replace('.jpg', '.npy')))
         attributes_b = torch.from_numpy(self.b_attributes.iloc[idx_b, 2:].to_numpy(dtype=np.float32))
-        
+        # print(self.a_attributes.iloc[idx_a, 1])
+        # print(attributes_a)
+        # print(self.b_attributes.iloc[idx_b, 1])
+        # print(attributes_b)
         return encoded_a, encoded_b, attributes_a, attributes_b
 
 
