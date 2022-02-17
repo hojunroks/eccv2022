@@ -39,7 +39,7 @@ translator:
   lambda_B: 1
   lambda_idt: 0.5
   lambda_ce: 1000
-  lambda_gan: 10
+  lambda_gan: 1
   pretrain: 0
   use_pretrain: 0
 

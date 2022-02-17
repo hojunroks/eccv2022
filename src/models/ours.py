@@ -74,7 +74,7 @@ class OurGan(pl.LightningModule):
             fake_imgs = torch.cat((fake_A, fake_B), dim=0)
             critic_fake = self.d_valid(fake_imgs)
             real_labels = torch.ones(critic_fake.shape, device=self.device)
-            loss_gan = self.gan_loss(critic_fake, real_labels)
+            loss_gan = self.gan_loss(critic_fake, real_labels) * self.hparams.lambda_gan * (1-self.hparams.pretrain)
 
             # Cycle Loss
             recon_A = self.B2A(fake_B)
@@ -82,22 +82,32 @@ class OurGan(pl.LightningModule):
             recon_B = self.A2B(fake_A)
             loss_BAB_recon = self.cycle_loss(recon_B, B_imgs)*self.hparams.lambda_B
 
+            # # Classification Loss
+            
+            # fakeA_labels = self.d_attribute(torch.flatten(fake_A, start_dim=1))
+            # A_labels = torch.ones((fake_A.shape[0]), device=self.device).long()
+            # loss_a_ce = F.cross_entropy(fakeA_labels, A_labels)*self.hparams.lambda_ce * (1-self.hparams.pretrain)
+            # fakeB_labels = self.d_attribute(torch.flatten(fake_B, start_dim=1))
+            # B_labels = torch.zeros((fake_B.shape[0]), device=self.device).long()
+            # loss_b_ce = F.cross_entropy(fakeB_labels, B_labels)*self.hparams.lambda_ce * (1-self.hparams.pretrain)
+
             # Classification Loss
-            if self.hparams.pretrain:
-                with torch.no_grad():
-                    fakeA_labels = self.d_attribute(torch.flatten(fake_A, start_dim=1))
-                    A_labels = torch.ones((fake_A.shape[0]), device=self.device).long()
-                    loss_a_ce = F.cross_entropy(fakeA_labels, A_labels)*self.hparams.lambda_ce
-                    fakeB_labels = self.d_attribute(torch.flatten(fake_B, start_dim=1))
-                    B_labels = torch.zeros((fake_B.shape[0]), device=self.device).long()
-                    loss_b_ce = F.cross_entropy(fakeB_labels, B_labels)*self.hparams.lambda_ce
-            else:
-                fakeA_labels = self.d_attribute(torch.flatten(fake_A, start_dim=1))
-                A_labels = torch.ones((fake_A.shape[0]), device=self.device).long()
-                loss_a_ce = F.cross_entropy(fakeA_labels, A_labels)*self.hparams.lambda_ce
-                fakeB_labels = self.d_attribute(torch.flatten(fake_B, start_dim=1))
-                B_labels = torch.zeros((fake_B.shape[0]), device=self.device).long()
-                loss_b_ce = F.cross_entropy(fakeB_labels, B_labels)*self.hparams.lambda_ce
+            fakeA_labels = self.d_attribute(torch.flatten(fake_A, start_dim=1))
+            A_labels = torch.ones((fake_A.shape[0]), device=self.device).long()
+            A_before = self.d_attribute(torch.flatten(A_imgs, start_dim=1))
+
+            fake_a_ce = F.cross_entropy(fakeA_labels, A_labels)
+            real_a_ce = F.cross_entropy(A_before, A_labels)
+            loss_a_ce = nn.L1Loss()(fake_a_ce.mean(), real_a_ce.mean()) * self.hparams.lambda_ce * (1-self.hparams.pretrain)
+
+            fakeB_labels = self.d_attribute(torch.flatten(fake_B, start_dim=1))
+            B_labels = torch.zeros((fake_B.shape[0]), device=self.device).long()
+            B_before = self.d_attribute(torch.flatten(B_imgs, start_dim=1))
+
+            fake_b_ce = F.cross_entropy(fakeB_labels, B_labels)
+            real_b_ce = F.cross_entropy(B_before, B_labels)
+            loss_b_ce = nn.L1Loss()(fake_b_ce.mean(), real_b_ce.mean()) * self.hparams.lambda_ce * (1-self.hparams.pretrain)
+
 
             if self.hparams.pretrain:
                 generator_loss = loss_identity_B + loss_identity_A + loss_ABA_recon + loss_BAB_recon
