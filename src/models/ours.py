@@ -11,6 +11,7 @@ from torchvision.utils import make_grid
 from src.models.cycleganparts import CycleGanCritic, CycleGanGenerator, CycleGanCriticFC, CycleGanGeneratorFC
 from src.scheduler import WarmupCosineLR
 from torchmetrics import Accuracy, AUROC
+from scipy.optimize import curve_fit
 
 ATTRIBUTE_KEYS = ['5_o_Clock_Shadow', 'Arched_Eyebrows', 'Attractive', 'Bags_Under_Eyes', 'Bald', 'Bangs', 'Big_Lips', 'Big_Nose', 'Black_Hair', 'Blond_Hair', 'Blurry', 'Brown_Hair', 'Bushy_Eyebrows', 'Chubby', 'Double_Chin', 'Eyeglasses', 'Goatee', 'Gray_Hair', 'Heavy_Makeup', 'High_Cheekbones', 'Male', 'Mouth_Slightly_Open', 'Mustache', 'Narrow_Eyes', 'No_Beard', 'Oval_Face', 'Pale_Skin', 'Pointy_Nose', 'Receding_Hairline', 'Rosy_Cheeks', 'Sideburns', 'Smiling', 'Straight_Hair', 'Wavy_Hair', 'Wearing_Earrings', 'Wearing_Hat', 'Wearing_Lipstick', 'Wearing_Necklace', 'Wearing_Necktie', 'Young']
 
@@ -98,7 +99,7 @@ class OurGan(pl.LightningModule):
 
             fake_a_ce = F.cross_entropy(fakeA_labels, A_labels)
             real_a_ce = F.cross_entropy(A_before, A_labels)
-            loss_a_ce = nn.L1Loss()(fake_a_ce.mean(), real_a_ce.mean()) * self.hparams.lambda_ce * (1-self.hparams.pretrain)
+            loss_a_ce = nn.MSELoss()(fake_a_ce.mean(), real_a_ce.mean()) * self.hparams.lambda_ce * (1-self.hparams.pretrain)
 
             fakeB_labels = self.d_attribute(torch.flatten(fake_B, start_dim=1))
             B_labels = torch.zeros((fake_B.shape[0]), device=self.device).long()
@@ -106,7 +107,7 @@ class OurGan(pl.LightningModule):
 
             fake_b_ce = F.cross_entropy(fakeB_labels, B_labels)
             real_b_ce = F.cross_entropy(B_before, B_labels)
-            loss_b_ce = nn.L1Loss()(fake_b_ce.mean(), real_b_ce.mean()) * self.hparams.lambda_ce * (1-self.hparams.pretrain)
+            loss_b_ce = nn.MSELoss()(fake_b_ce.mean(), real_b_ce.mean()) * self.hparams.lambda_ce * (1-self.hparams.pretrain)
 
 
             if self.hparams.pretrain:
