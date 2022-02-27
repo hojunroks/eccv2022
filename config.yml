@@ -10,7 +10,7 @@ common:
   id_gen: "identity_generator.ckpt"
   deterministic: True
   target_attr: Male
-  classifiers: Male Mouth_Slightly_Open Smiling Wearing_Lipstick Eyeglasses
+  classifiers: Male Mouth_Slightly_Open Smiling Wearing_Lipstick Eyeglasses Young Chubby Blond_Hair Attractive
   precision: 16
   gpus: 2
   
