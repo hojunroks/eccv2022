@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 from src.models.autoencoder import AutoEncoder
-from src.datamodule import CelebAData
+from src.datamodule import CelebAData, CheXpertData
 import pytorch_lightning as pl
 from datetime import datetime
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -17,6 +17,7 @@ def main():
     
     # add PROGRAM level args
     parser.add_argument('--data_dir', type=str, required=False)
+    parser.add_argument("--dataset", type=str, required=False)
     parser.add_argument("--batch_size", type=int, required=False)
     parser.add_argument("--num_workers", type=int, required=False)
 
@@ -31,7 +32,10 @@ def main():
     # INITIALIZE DATAMODULE
     ###########################
     print("INITIALIZING DATAMODULE...")
-    dm = CelebAData(args)
+    if args.dataset=="celeba":
+        dm = CelebAData(args)
+    else:
+        dm = CheXpertData(args)
     
     ###########################
     # INITIALIZE MODEL
@@ -44,6 +48,7 @@ def main():
     ###########################
     print("INITIALIZING LOGGER...")
     logdir = 'logs/autoencoder'
+    logdir += args.dataset+"/"
     logdir += datetime.now().strftime("/%m%d")
     logger = TensorBoardLogger(logdir, name='')
 
@@ -58,7 +63,6 @@ def main():
         callbacks = [checkpoint_callback, lr_monitor],
     )
     trainer.fit(autoencoder, datamodule=dm)
-    trainer.save_checkpoint(logger.log_dir+logger.name+"/"+logger.name+"celeba_test.ckpt")
 
     ###########################
     # TEST

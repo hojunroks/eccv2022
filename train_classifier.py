@@ -6,7 +6,7 @@ from torchvision import models
 from datetime import datetime
 from pytorch_lightning.loggers import TensorBoardLogger
 from src.utils import parse_config
-from src.datamodule import CelebAEncodedData
+from src.datamodule import CelebAEncodedData, CheXpertEncodedData
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 import pandas as pd
 import os
@@ -22,7 +22,10 @@ def main():
     
     # add PROGRAM level args
     parser.add_argument('--data_dir', type=str, required=False)
+    parser.add_argument('--dataset', type=str, required=False)
     parser.add_argument("--batch_size", type=int, required=False)
+    parser.add_argument("--val_batch_size", type=int, required=False)
+    parser.add_argument("--pretrained_ver", type=str, required=False)
     parser.add_argument("--num_workers", type=int, required=False)
     parser.add_argument("--target_attr", type=str, required=False)
 
@@ -34,10 +37,17 @@ def main():
     parser = EncodedClassifier.add_model_specific_args(parser)
     args = parse_config(parser, 'config.yml', 'classifier')
 
-    dm = CelebAEncodedData(args)
-    target_attr_idx = list(pd.read_csv(os.path.join(args.data_dir, 'list_attr_celeba.csv')).keys()).index(args.target_attr)-1
+    if args.dataset=="celeba":
+        dm = CelebAEncodedData(args)
+        target_attr_idx = list(pd.read_csv(os.path.join(args.data_dir, 'list_attr_celeba.csv')).keys()).index(args.target_attr)-1
+    else:
+        dm = CheXpertEncodedData(args)
+        target_attr_idx = list(pd.read_csv(os.path.join(args.data_dir, args.pretrained_ver, 'CheXpert-v1.0-small/train.csv')).keys()).index(args.target_attr)-5
+        # print(target_attr_idx)
+
+    
     classifier = EncodedClassifier(hparams=args, target_attr=target_attr_idx)
-    logger = TensorBoardLogger('logs/classifier/{}'.format(datetime.now().strftime("/%m%d")), name=args.target_attr)
+    logger = TensorBoardLogger('logs/classifier/{}/{}'.format(args.dataset, datetime.now().strftime("/%m%d")), name=args.target_attr)
 
     ###########################
     # TRAIN
@@ -53,12 +63,6 @@ def main():
     trainer.fit(classifier, datamodule=dm)
     
 
-    ###########################
-    # TEST
-    ###########################
-    print("START TESTING...")
-    # result = trainer.test(datamodule=dm)
-    # print(result)
 
 if __name__=='__main__':
     main()

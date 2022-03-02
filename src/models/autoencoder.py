@@ -15,7 +15,7 @@ class AutoEncoder(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters(vars(hparams))
         self.encoder = nn.Sequential(
-            EncoderBlock(3, 16),
+            EncoderBlock(self.hparams.channels, 16),
             EncoderBlock(16, 64),
             EncoderBlock(64, 128),
             EncoderBlock(128, 256),
@@ -26,7 +26,7 @@ class AutoEncoder(pl.LightningModule):
             DecoderBlock(256, 128),
             DecoderBlock(128, 64),
             DecoderBlock(64, 16),
-            DecoderBlock(16 , 3, last_layer=True)
+            DecoderBlock(16 , self.hparams.channels, last_layer=True)
         )
         self.loss = nn.L1Loss()
     
@@ -94,6 +94,7 @@ class AutoEncoder(pl.LightningModule):
     @staticmethod 
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
+        parser.add_argument("--channels", type=int, required=False)
         parser.add_argument("--lr", type=float, required=False)
         parser.add_argument("--weight_decay", type=float, required=False)
         return parser

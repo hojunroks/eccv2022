@@ -5,26 +5,43 @@ import torch.nn.functional as F
 from argparse import ArgumentParser
 from src.scheduler import WarmupCosineLR
 from torchmetrics import Accuracy, AUROC
+from sklearn.metrics import confusion_matrix
+
 
 class EncodedClassifierNetwork(nn.Module):
-    def __init__(self):
+    def __init__(self, use_dropout):
         super().__init__()
-        self.s = nn.Sequential(
-            nn.Conv2d(512, 256, 3),
-            nn.BatchNorm2d(256),
-            nn.ReLU(),
-            nn.Dropout(),
-            nn.Flatten(),
-            nn.Linear(1024, 512),
-            nn.BatchNorm1d(512),
-            nn.ReLU(),
-            nn.Dropout(),
-            nn.Linear(512, 256),
-            nn.BatchNorm1d(256),
-            nn.ReLU(),
-            nn.Dropout(),
-            nn.Linear(256, 2),
-        )
+        if use_dropout:
+            self.s = nn.Sequential(
+                nn.Conv2d(512, 256, 3),
+                nn.BatchNorm2d(256),
+                nn.ReLU(),
+                nn.Dropout(),
+                nn.Flatten(),
+                nn.Linear(1024, 512),
+                nn.BatchNorm1d(512),
+                nn.ReLU(),
+                nn.Dropout(),
+                nn.Linear(512, 256),
+                nn.BatchNorm1d(256),
+                nn.ReLU(),
+                nn.Dropout(),
+                nn.Linear(256, 2),
+            )
+        else:
+            self.s = nn.Sequential(
+                nn.Conv2d(512, 256, 3),
+                nn.BatchNorm2d(256),
+                nn.ReLU(),
+                nn.Flatten(),
+                nn.Linear(1024, 512),
+                nn.BatchNorm1d(512),
+                nn.ReLU(),
+                nn.Linear(512, 256),
+                nn.BatchNorm1d(256),
+                nn.ReLU(),
+                nn.Linear(256, 2),
+            )
         
 
     def forward(self, x):
@@ -39,7 +56,7 @@ class EncodedClassifier(pl.LightningModule):
     def __init__(self, hparams, target_attr, *args, **kwargs):
         super().__init__()
         self.save_hyperparameters(vars(hparams))
-        self.model = EncodedClassifierNetwork()
+        self.model = EncodedClassifierNetwork(use_dropout=self.hparams.use_dropout)
         self.target_attr = target_attr
         self.p = 0.5
         self.accuracy = Accuracy()
@@ -60,6 +77,7 @@ class EncodedClassifier(pl.LightningModule):
         return loss, accuracy, auroc
 
     def training_step(self, batch, batch_index):
+        self.model.train()
         loss, accuracy, auroc = self.shared_step(batch, batch_index)
         self.log('loss/train', loss)
         self.log('acc/train', accuracy)
@@ -67,10 +85,22 @@ class EncodedClassifier(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_index):
-        loss, accuracy, auroc = self.shared_step(batch, batch_index)
+        self.model.eval()
+        x, y = batch
+        y_hat = self.forward(x)
+        y_true = ((y[:,self.target_attr]+1)/2).long()
+        print(y_true)
+        loss = F.cross_entropy(y_hat, y_true)
+        accuracy = self.accuracy(y_hat, y_true)
+        auroc = self.auroc(y_hat, y_true)
         self.log('loss/val', loss)
         self.log('acc/val', accuracy)
         self.log('auroc/val', auroc)
+        return confusion_matrix(y_true.cpu(), torch.argmax(y_hat, 1).cpu())
+    
+    def validation_epoch_end(self, outputs):
+        print(outputs)
+        return
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
@@ -99,5 +129,6 @@ class EncodedClassifier(pl.LightningModule):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--lr", type=float, required=False)
         parser.add_argument("--weight_decay", type=float, required=False)
+        parser.add_argument("--use_dropout", type=int, required=False)
         return parser
         

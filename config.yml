@@ -2,6 +2,7 @@ common:
   log_every_n_steps: 1
   gradient_clip_val: 0.5
   data_dir: "data_preprocessed/celeba"
+  dataset: "celeba"
   images_dir: "img_align_celeba_128"
   encoded_dir: "data_encoded"
   pretrained_dir: "pretrained"
@@ -9,9 +10,13 @@ common:
   pretrained_autoencoder: "autoencoder.ckpt"
   id_gen: "identity_generator.ckpt"
   deterministic: True
+  channels: 3
+  use_dropout: 1
   target_attr: Male
-  classifiers: Male Mouth_Slightly_Open Smiling Wearing_Lipstick Eyeglasses Young Chubby Blond_Hair Attractive
+  classifiers: Male,Mouth_Slightly_Open,Smiling,Wearing_Lipstick,Eyeglasses,Young,Chubby,Blond_Hair,Attractive,No_Beard,Mustache,Heavy_Makeup
+  # classifiers: Edema,Cardiomegaly,Enlarged Cardiomediastinum,Consolidation,Pleural Effusion
   precision: 16
+  pretrained_ours: male_50
   gpus: 2
   
 
@@ -19,6 +24,7 @@ common:
 autoencoder:
   max_epochs: 100
   batch_size: 1024
+  val_batch_size: 32
   num_workers: 4
   log_every_n_steps: 1
   lr: 0.0001
@@ -27,7 +33,7 @@ autoencoder:
 
 translator:
   max_epochs: 100
-  batch_size: 4
+  batch_size: 1024
   num_workers: 2
   lr_g: 0.0002
   lr_d: 0.0002
@@ -42,14 +48,17 @@ translator:
   lambda_gan: 1
   pretrain: 0
   use_pretrain: 0
+  eps: 1
 
 classifier:
   max_epochs: 50
   batch_size: 512
+  val_batch_size: 32
   num_workers: 4
   lr: 0.001
   weight_decay: 0.0001
   accumulate_grad_batches: 1
+  use_dropout: 1
 
 
 fvae:

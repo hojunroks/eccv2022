@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import numpy as np
 import itertools
 import pytorch_lightning as pl
 import torch
@@ -10,24 +11,26 @@ import torch.nn.functional as F
 from torchvision.utils import make_grid
 from src.models.cycleganparts import CycleGanCritic, CycleGanGenerator, CycleGanCriticFC, CycleGanGeneratorFC
 from src.scheduler import WarmupCosineLR
-from torchmetrics import Accuracy, AUROC
+from torchvision.transforms import GaussianBlur
+from sklearn.metrics import confusion_matrix
+from torchmetrics import Accuracy, AUROC, F1
 from scipy.optimize import curve_fit
 
 ATTRIBUTE_KEYS = ['5_o_Clock_Shadow', 'Arched_Eyebrows', 'Attractive', 'Bags_Under_Eyes', 'Bald', 'Bangs', 'Big_Lips', 'Big_Nose', 'Black_Hair', 'Blond_Hair', 'Blurry', 'Brown_Hair', 'Bushy_Eyebrows', 'Chubby', 'Double_Chin', 'Eyeglasses', 'Goatee', 'Gray_Hair', 'Heavy_Makeup', 'High_Cheekbones', 'Male', 'Mouth_Slightly_Open', 'Mustache', 'Narrow_Eyes', 'No_Beard', 'Oval_Face', 'Pale_Skin', 'Pointy_Nose', 'Receding_Hairline', 'Rosy_Cheeks', 'Sideburns', 'Smiling', 'Straight_Hair', 'Wavy_Hair', 'Wearing_Earrings', 'Wearing_Hat', 'Wearing_Lipstick', 'Wearing_Necklace', 'Wearing_Necktie', 'Young']
+ATTRIBUTE_KEYS_CHEXPERT = ['No Finding', 'Enlarged Cardiomediastinum', 'Cardiomegaly',
+       'Lung Opacity', 'Lung Lesion', 'Edema', 'Consolidation', 'Pneumonia',
+       'Atelectasis', 'Pneumothorax', 'Pleural Effusion', 'Pleural Other',
+       'Fracture', 'Support Devices']
 
 
 class OurGan(pl.LightningModule):
     def __init__(self, decoder, hparams, classifier, classifiers, *args, **kwargs):
         super().__init__()
         self.save_hyperparameters(vars(hparams))
-        
 
-        # self.A2B = CycleGanGeneratorFC
-        # self.B2A = CycleGanGeneratorFC
         self.A2B = CycleGanGenerator()
         self.B2A = CycleGanGenerator()
 
-        # self.d_valid = CycleGanCriticFC()
         self.d_valid = CycleGanCritic()
         self.d_attribute = classifier.eval()
 
@@ -40,8 +43,7 @@ class OurGan(pl.LightningModule):
 
         self.accuracy = Accuracy()
         self.auroc = AUROC(num_classes=2)
-
-
+        self.f1 = F1(num_classes=2)
     
 
     def gan_loss(self, y_hat, y):
@@ -82,15 +84,6 @@ class OurGan(pl.LightningModule):
             loss_ABA_recon = self.cycle_loss(recon_A, A_imgs)*self.hparams.lambda_A
             recon_B = self.A2B(fake_A)
             loss_BAB_recon = self.cycle_loss(recon_B, B_imgs)*self.hparams.lambda_B
-
-            # # Classification Loss
-            
-            # fakeA_labels = self.d_attribute(torch.flatten(fake_A, start_dim=1))
-            # A_labels = torch.ones((fake_A.shape[0]), device=self.device).long()
-            # loss_a_ce = F.cross_entropy(fakeA_labels, A_labels)*self.hparams.lambda_ce * (1-self.hparams.pretrain)
-            # fakeB_labels = self.d_attribute(torch.flatten(fake_B, start_dim=1))
-            # B_labels = torch.zeros((fake_B.shape[0]), device=self.device).long()
-            # loss_b_ce = F.cross_entropy(fakeB_labels, B_labels)*self.hparams.lambda_ce * (1-self.hparams.pretrain)
 
             # Classification Loss
             fakeA_labels = self.d_attribute(torch.flatten(fake_A, start_dim=1))
@@ -160,70 +153,98 @@ class OurGan(pl.LightningModule):
             return output
 
     def validation_step(self, batch, batch_idx):
+        if self.hparams.dataset=='celeba':
+            attribute_keys = ATTRIBUTE_KEYS
+        else:
+            attribute_keys = ATTRIBUTE_KEYS_CHEXPERT
         As, Bs, attribute_as, attribute_bs = batch
+        trues = torch.cat((As,Bs))
         As = nn.Unflatten(1, (512, 4, 4))(As)
         Bs = nn.Unflatten(1, (512, 4, 4))(Bs)
-        trues = torch.cat((As,Bs))
         gt = torch.cat((attribute_as, attribute_bs))
         fake_As = self.B2A(Bs)
         fake_Bs = self.A2B(As)
         fakes = torch.cat((fake_Bs, fake_As))
         for cls in self.classifiers.keys():
             self.classifiers[cls].to(self.device)
+            self.classifiers[cls].eval()
             gt_labels = ((gt[:, cls]+1)/2).long()
-            true_preds = self.classifiers[cls](torch.flatten(trues, start_dim=1))
+            true_preds = self.classifiers[cls](trues)
             fake_preds = self.classifiers[cls](torch.flatten(fakes, start_dim=1))
             accuracy_true = self.accuracy(true_preds, gt_labels)
-            auroc_true = self.accuracy(true_preds, gt_labels)
+            auroc_true = self.auroc(true_preds, gt_labels)
+            f1_true = self.f1(true_preds, gt_labels)
             accuracy_fake = self.accuracy(fake_preds, gt_labels)
-            auroc_fake = self.accuracy(fake_preds, gt_labels)
-            self.log(ATTRIBUTE_KEYS[cls]+'/accuracy/true', accuracy_true)
-            self.log(ATTRIBUTE_KEYS[cls]+'/accuracy/fake', accuracy_fake)
-            self.log(ATTRIBUTE_KEYS[cls]+'/auroc/true', auroc_true)
-            self.log(ATTRIBUTE_KEYS[cls]+'/auroc/fake', auroc_fake)
+            auroc_fake = self.auroc(fake_preds, gt_labels)
+            f1_fake = self.f1(fake_preds, gt_labels)
+            self.log(attribute_keys[cls]+'/accuracy/true', accuracy_true)
+            self.log(attribute_keys[cls]+'/accuracy/fake', accuracy_fake)
+            self.log(attribute_keys[cls]+'/auroc/true', auroc_true)
+            self.log(attribute_keys[cls]+'/auroc/fake', auroc_fake)
+            self.log(attribute_keys[cls]+'/f1/true', f1_true)
+            self.log(attribute_keys[cls]+'/f1/fake', f1_fake)
                 
             
         real_A_imgs = self.decoder(As)
         fake_B_imgs = self.decoder(self.A2B(As))
         reconstructed_A_imgs = self.decoder(self.B2A(self.A2B(As)))
+        diff_ABs = GaussianBlur((25, 25), 4)(torch.mean(torch.abs(fake_B_imgs - real_A_imgs), dim=1, keepdim=True))
+        diff_ABs = diff_ABs/(torch.max(torch.max(diff_ABs, dim=-1)[0], dim=-1)[0].unsqueeze(-1).unsqueeze(-1).expand(diff_ABs.shape)+0.1)
+        
         real_B_imgs = self.decoder(Bs)
         fake_A_imgs = self.decoder(self.B2A(Bs))
         reconstructed_B_imgs = self.decoder(self.A2B(self.B2A(Bs)))
+        diff_BAs = GaussianBlur((9, 9), 32)(torch.mean(torch.abs(fake_A_imgs-real_B_imgs), dim=1, keepdim=True))
+        diff_BAs = diff_BAs/(torch.max(torch.max(diff_BAs, dim=-1)[0], dim=-1)[0].unsqueeze(-1).unsqueeze(-1).expand(diff_BAs.shape)+0.1)
+
         batch_dictionary={
             "real_As": real_A_imgs,
             "fake_Bs": fake_B_imgs,
+            "diff_ABs": diff_ABs,
             "reconstructed_As": reconstructed_A_imgs,
             "real_Bs": real_B_imgs,
             "fake_As": fake_A_imgs,
+            "diff_BAs": diff_BAs,
             "reconstructed_Bs": reconstructed_B_imgs
         }
         return batch_dictionary
 
     def validation_epoch_end(self, val_step_outputs):
         idxes = random.sample(range(val_step_outputs[0]['real_As'].shape[0]), min(4,val_step_outputs[0]['real_As'].shape[0]))
-        real_As = make_grid(torch.cat([output["real_As"] for output in val_step_outputs])[idxes], nrow=1)
-        fake_Bs = make_grid(torch.cat([output["fake_Bs"] for output in val_step_outputs])[idxes], nrow=1)
-        reconstructed_As = make_grid(torch.cat([output["reconstructed_As"] for output in val_step_outputs])[idxes], nrow=1)
-        real_Bs = make_grid(torch.cat([output["real_Bs"] for output in val_step_outputs])[idxes], nrow=1)
-        fake_As = make_grid(torch.cat([output["fake_As"] for output in val_step_outputs])[idxes], nrow=1)
-        reconstructed_Bs = make_grid(torch.cat([output["reconstructed_Bs"] for output in val_step_outputs])[idxes], nrow=1)
-        fig = plt.figure(figsize=(18, 12))
-        fig.add_subplot(1,6,1)
+        real_As = make_grid(torch.cat([output["real_As"] for output in val_step_outputs])[idxes], nrow=1, padding=0)
+        print(real_As.shape)
+        fake_Bs = make_grid(torch.cat([output["fake_Bs"] for output in val_step_outputs])[idxes], nrow=1, padding=0)
+        diff_ABs = make_grid(torch.cat([output["diff_ABs"] for output in val_step_outputs])[idxes], nrow=1, padding=0)
+        reconstructed_As = make_grid(torch.cat([output["reconstructed_As"] for output in val_step_outputs])[idxes], nrow=1, padding=0)
+        real_Bs = make_grid(torch.cat([output["real_Bs"] for output in val_step_outputs])[idxes], nrow=1, padding=0)
+        fake_As = make_grid(torch.cat([output["fake_As"] for output in val_step_outputs])[idxes], nrow=1, padding=0)
+        diff_BAs = make_grid(torch.cat([output["diff_BAs"] for output in val_step_outputs])[idxes], nrow=1, padding=0)
+        reconstructed_Bs = make_grid(torch.cat([output["reconstructed_Bs"] for output in val_step_outputs])[idxes], nrow=1, padding=0)
+        fig = plt.figure(figsize=(24, 12))
+        fig.add_subplot(1,8,1)
         plt.axis('off')
         plt.imshow(real_As.permute(1,2,0).data.cpu().numpy())
-        fig.add_subplot(1,6,2)
+        fig.add_subplot(1,8,2)
         plt.axis('off')
         plt.imshow(fake_Bs.permute(1,2,0).data.cpu().numpy())
-        fig.add_subplot(1,6,3)
+        axis1 = fig.add_subplot(1,8,3)
+        plt.axis('off')
+        axis1.imshow(fake_Bs.permute(1,2,0).data.cpu().numpy())
+        axis1.imshow(diff_ABs.permute(1,2,0).data.cpu().numpy(), alpha=0.8)
+        fig.add_subplot(1,8,4)
         plt.axis('off')
         plt.imshow(reconstructed_As.permute(1,2,0).data.cpu().numpy())
-        fig.add_subplot(1,6,4)
+        fig.add_subplot(1,8,5)
         plt.axis('off')
         plt.imshow(real_Bs.permute(1,2,0).data.cpu().numpy())
-        fig.add_subplot(1,6,5)
+        fig.add_subplot(1,8,6)
         plt.axis('off')
         plt.imshow(fake_As.permute(1,2,0).data.cpu().numpy())
-        fig.add_subplot(1,6,6)
+        axis2 = fig.add_subplot(1,8,7)
+        plt.axis('off')
+        axis2.imshow(fake_As.permute(1,2,0).data.cpu().numpy())
+        axis2.imshow(diff_BAs.permute(1,2,0).data.cpu().numpy(), alpha=0.8, cmap=plt.cm.jet)
+        fig.add_subplot(1,8,8)
         plt.axis('off')
         plt.imshow(reconstructed_Bs.permute(1,2,0).data.cpu().numpy())
         plt.tight_layout()
@@ -270,6 +291,7 @@ class OurGan(pl.LightningModule):
         parser.add_argument("--lambda_gan", type=float, required=False)
         parser.add_argument("--pretrain", type=int, required=False)
         parser.add_argument("--classifiers", type=list, required=False)
+        parser.add_argument("--channels", type=int, required=False)
         return parser
 
 

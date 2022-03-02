@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from argparse import ArgumentParser
 from src.scheduler import WarmupCosineLR
 from torchmetrics import Accuracy, AUROC
+from sklearn.metrics import confusion_matrix
 
 class Identity(nn.Module):
     def __init__(self):
@@ -72,9 +73,16 @@ class Classifier(pl.LightningModule):
         loss = F.cross_entropy(y_hat, y_true)
         accuracy = self.accuracy(y_hat, y_true)
         auroc = self.auroc(y_hat, y_true)
+        
         self.log('loss/val', loss)
         self.log('acc/val', accuracy)
         self.log('auroc/val', auroc)
+        print(confusion_matrix(y_true.cpu(), torch.argmax(y_hat, 1).cpu()))
+        return confusion_matrix(y_true.cpu(), torch.argmax(y_hat, 1).cpu())
+
+    def validation_epoch_end(self, val_step_outputs):
+        print(val_step_outputs)
+        return
 
     def test_step(self, batch, batch_index):
         pass
